@@ -1,0 +1,6 @@
+{
+  "name": "generic-static",
+  "scripts": {
+    "build": "mkdir -p dist && echo '<h1>Generic Static</h1>' > dist/index.html"
+  }
+}

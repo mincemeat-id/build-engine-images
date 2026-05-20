@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Stage 0 placeholder
-        run: |
-          echo "Stage 0 scaffold: fixture smoke runs land in Stage 3."
-          echo "Will run cold + warm-cache smokes and assert index.html exists."
+      - name: Run cold build smoke tests
+        run: bash tests/smoke/run-cold.sh
+      - name: Run warm-cache build smoke tests
+        run: bash tests/smoke/run-warm.sh

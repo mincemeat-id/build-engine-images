@@ -1,0 +1,8 @@
+{
+  "framework": "vite",
+  "package_manager": "bun",
+  "install_command": "bun install",
+  "build_command": "bun run build",
+  "output_dir": "dist",
+  "root": "."
+}

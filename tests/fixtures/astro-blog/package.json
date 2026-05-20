@@ -1,0 +1,10 @@
+{
+  "name": "astro-blog",
+  "type": "module",
+  "scripts": {
+    "build": "astro build"
+  },
+  "dependencies": {
+    "astro": "^4.8.0"
+  }
+}

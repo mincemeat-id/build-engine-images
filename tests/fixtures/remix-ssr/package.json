@@ -1,0 +1,12 @@
+{
+  "name": "remix-ssr",
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@remix-run/dev": "^2.9.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

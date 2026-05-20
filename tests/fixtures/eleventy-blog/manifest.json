@@ -1,0 +1,8 @@
+{
+  "framework": "eleventy",
+  "package_manager": "npm",
+  "install_command": "npm install",
+  "build_command": "npm run build",
+  "output_dir": "_site",
+  "root": "."
+}

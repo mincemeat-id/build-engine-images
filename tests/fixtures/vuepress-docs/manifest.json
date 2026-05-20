@@ -1,0 +1,8 @@
+{
+  "framework": "vuepress",
+  "package_manager": "npm",
+  "install_command": "npm install --legacy-peer-deps",
+  "build_command": "npm run build",
+  "output_dir": "docs/.vuepress/dist",
+  "root": "."
+}

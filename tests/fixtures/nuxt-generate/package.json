@@ -1,0 +1,9 @@
+{
+  "name": "nuxt-generate",
+  "scripts": {
+    "build": "nuxt generate"
+  },
+  "devDependencies": {
+    "nuxt": "^3.11.2"
+  }
+}

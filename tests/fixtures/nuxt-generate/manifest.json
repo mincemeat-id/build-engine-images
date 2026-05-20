@@ -1,0 +1,8 @@
+{
+  "framework": "nuxt",
+  "package_manager": "npm",
+  "install_command": "npm install",
+  "build_command": "npx nuxt generate",
+  "output_dir": ".output/public",
+  "root": "."
+}

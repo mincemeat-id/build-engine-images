@@ -1,0 +1,3 @@
+# VitePress Docs
+
+Hello VitePress.

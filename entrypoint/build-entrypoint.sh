@@ -75,6 +75,52 @@ esac
 project_root="$(cd "$WORKSPACE_SRC" && cd "$root_rel" 2>/dev/null && pwd)" \
     || die "project root not found: $WORKSPACE_SRC/$root_rel"
 
+# Framework compatibility checks (fail fast for incompatible configurations)
+if [ "$framework" = "nextjs" ]; then
+    has_export=0
+    for f in next.config.js next.config.mjs next.config.ts; do
+        if [ -f "$project_root/$f" ] && grep -q "output" "$project_root/$f" && grep -q "export" "$project_root/$f"; then
+            has_export=1
+        fi
+    done
+    if [ -f "$project_root/package.json" ] && grep -q "next export" "$project_root/package.json"; then
+        has_export=1
+    fi
+    if [ "$has_export" -eq 0 ]; then
+        die "BUILD_INCOMPATIBLE: NEXTJS_REQUIRES_EXPORT"
+    fi
+fi
+
+if [ "$framework" = "remix" ]; then
+    has_spa=0
+    for f in vite.config.js vite.config.ts; do
+        if [ -f "$project_root/$f" ] && grep -q "ssr: false" "$project_root/$f"; then
+            has_spa=1
+        fi
+    done
+    if [ "$has_spa" -eq 0 ]; then
+        die "BUILD_INCOMPATIBLE: REMIX_REQUIRES_SPA_MODE"
+    fi
+fi
+
+if [ "$framework" = "sveltekit" ]; then
+    has_static=0
+    if [ -f "$project_root/svelte.config.js" ]; then
+        if grep -q "adapter-static" "$project_root/svelte.config.js"; then
+            has_static=1
+        fi
+    fi
+    if [ "$has_static" -eq 0 ]; then
+        die "BUILD_INCOMPATIBLE: SVELTEKIT_REQUIRES_STATIC_ADAPTER"
+    fi
+fi
+
+if [ "$framework" = "nuxt" ]; then
+    if [[ ! "$build_command" =~ "generate" ]]; then
+        die "BUILD_INCOMPATIBLE: NUXT_REQUIRES_GENERATE"
+    fi
+fi
+
 log "framework=$framework package_manager=$package_manager root=$root_rel"
 log "project_root=$project_root"
 

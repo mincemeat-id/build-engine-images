@@ -1,0 +1,10 @@
+{
+  "name": "vite-vanilla",
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "^5.2.0"
+  }
+}

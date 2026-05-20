@@ -1,0 +1,9 @@
+{
+  "name": "eleventy-blog",
+  "scripts": {
+    "build": "eleventy"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^2.0.1"
+  }
+}

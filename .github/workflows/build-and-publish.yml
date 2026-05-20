@@ -192,6 +192,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Enforce Tag Immutability
+        if: github.event_name != 'pull_request'
+        run: |
+          TAG_TO_CHECK="ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}:${{ steps.tags.outputs.active_tag }}"
+          echo "Checking if tag $TAG_TO_CHECK already exists in GHCR..."
+          if docker manifest inspect "$TAG_TO_CHECK" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG_TO_CHECK already exists in GHCR. Re-publishing an existing tag is forbidden to ensure immutability."
+            exit 1
+          fi
+          echo "Tag does not exist. Proceeding with publication."
+
       - name: Tag and push image
         if: github.event_name != 'pull_request'
         id: push
@@ -231,6 +242,90 @@ jobs:
         with:
           subject-path: ${{ matrix.image.dockerfile }}
 
+      - name: Save image digest and tag
+        if: github.event_name != 'pull_request'
+        run: |
+          mkdir -p image-outputs
+          echo "tag=ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}:${{ steps.tags.outputs.active_tag }}" > image-outputs/data.txt
+          echo "digest=sha256:${{ steps.push.outputs.digest }}" >> image-outputs/data.txt
+          SAFE_NAME=$(echo "${{ matrix.image.name }}_${{ matrix.image.tag }}" | tr ':' '_')
+          mv image-outputs/data.txt "image-outputs/${SAFE_NAME}.txt"
+
+      - name: Upload digest info
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-info-${{ matrix.image.name }}-${{ matrix.image.tag }}
+          path: image-outputs/
+          retention-days: 1
+
+  manifest-update:
+    name: Update and Publish Manifest
+    needs: build
+    if: github.event_name == 'release' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install jsonschema
+        run: pip install --quiet "jsonschema==4.*"
+
+      - name: Download all digest artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: digest-artifacts
+
+      - name: Generate updated manifest.json
+        id: generate
+        run: |
+          ARGS=()
+          for f in $(find digest-artifacts -name "*.txt"); do
+            filename=$(basename "$f" .txt)
+            case "$filename" in
+              node_20) logical_name="node:20" ;;
+              node_22) logical_name="node:22" ;;
+              bun_1) logical_name="bun:1" ;;
+              hugo_latest) logical_name="hugo:latest" ;;
+            esac
+            tag=$(grep "^tag=" "$f" | cut -d'=' -f2)
+            digest=$(grep "^digest=" "$f" | cut -d'=' -f2)
+            ARGS+=("--image-tag" "${logical_name}=${tag}" "--image-digest" "${logical_name}=${digest}")
+          done
+
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION_VAL="${{ github.event.release.tag_name }}"
+            VERSION_VAL="${VERSION_VAL#v}"
+            ARGS+=("--version-semver" "$VERSION_VAL")
+            echo "release_version=$VERSION_VAL" >> "$GITHUB_OUTPUT"
+          fi
+
+          python scripts/generate_manifest.py "${ARGS[@]}"
+
+      - name: Upload Candidate Manifest
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-manifest
+          path: manifest.json
+
+      - name: Commit and Push Manifest (Release only)
+        if: github.event_name == 'release'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add manifest.json
+          git commit -m "chore: release manifest.json version ${{ steps.generate.outputs.release_version }} [skip ci]" || echo "No changes to commit"
+          git push origin HEAD:master
+
   size-report:
     name: Aggregate image size report
     needs: build
@@ -241,3 +336,4 @@ jobs:
         run: |
           echo "Per-image size summaries are appended to each build job's summary."
           echo "Stage 4 will record digests + sizes into manifest.json on release."
+

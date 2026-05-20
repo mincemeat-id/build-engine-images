@@ -79,6 +79,11 @@ The repo is in Stage 0 (scaffold). Build/test scripts are added in Stages 1-3.
 
 CVE budget and secret policy: see "Security And Supply Chain" in the design doc.
 
+## Rollback
+
+In the event of a regression or issue with a released image or manifest version, see [docs/rollback.md](./docs/rollback.md) for the rollback procedure.
+
 ## License
 
 [MIT](./LICENSE) © Mincemeat.
+

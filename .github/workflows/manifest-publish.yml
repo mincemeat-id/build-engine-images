@@ -17,7 +17,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
   packages: read
 
 jobs:
@@ -41,6 +42,38 @@ jobs:
     if: github.event_name == 'release' || github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
-      - name: Stage 0 placeholder
+      - name: Open manifest bump PR in build-engine
+        env:
+          GITHUB_TOKEN: ${{ secrets.MANIFEST_BUMP_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          echo "Stage 0 scaffold: manifest publication / build-engine PR lands in Stage 6."
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+
+          echo "Cloning mincemeat-id/build-engine..."
+          if gh repo clone mincemeat-id/build-engine build-engine -- --depth=1; then
+            cp manifest.json build-engine/manifest.json
+            cd build-engine
+
+            if git diff --quiet manifest.json; then
+              echo "No differences in manifest.json. Skipping PR creation."
+              exit 0
+            fi
+
+            BRANCH="bump-manifest-${{ github.sha }}"
+            git checkout -b "$BRANCH"
+            git add manifest.json
+            git commit -m "chore: bump build-engine-images manifest to $(jq -r '.version' manifest.json)"
+
+            echo "Pushing branch $BRANCH..."
+            git push origin "$BRANCH"
+
+            echo "Creating pull request..."
+            gh pr create \
+              --title "chore: bump build-engine-images manifest to $(jq -r '.version' manifest.json)" \
+              --body "Automated pull request triggered by build-engine-images update." \
+              --base master \
+              --head "$BRANCH"
+          else
+            echo "Warning: Could not clone mincemeat-id/build-engine. This is expected if the repository does not exist or if permissions are restricted."
+          fi
+

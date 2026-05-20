@@ -201,8 +201,8 @@ jobs:
           docker tag "$LOCAL_TAG" "$REMOTE_TAG"
           docker push "$REMOTE_TAG"
           
-          # Extract digest
-          DIGEST=$(docker image inspect "$REMOTE_TAG" --format '{{range .RepoDigests}}{{.}}{{end}}' | cut -d'@' -f2)
+          # Extract digest (strip sha256: prefix if present)
+          DIGEST=$(docker image inspect "$REMOTE_TAG" --format '{{range .RepoDigests}}{{.}}{{end}}' | cut -d'@' -f2 | cut -d':' -f2)
           if [ -z "$DIGEST" ]; then
             DIGEST=$(docker image inspect "$REMOTE_TAG" --format '{{.Id}}' | cut -d':' -f2)
           fi

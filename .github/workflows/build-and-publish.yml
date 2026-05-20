@@ -298,6 +298,11 @@ jobs:
               node_22) logical_name="node:22" ;;
               bun_1) logical_name="bun:1" ;;
               hugo_latest) logical_name="hugo:latest" ;;
+              zola_latest) logical_name="zola:latest" ;;
+              *)
+                echo "::error::Unknown digest artifact '$filename'. Add a mapping in build-and-publish.yml." >&2
+                exit 1
+                ;;
             esac
             tag=$(grep "^tag=" "$f" | cut -d'=' -f2)
             digest=$(grep "^digest=" "$f" | cut -d'=' -f2)

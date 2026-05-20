@@ -17,6 +17,20 @@ permissions:
   contents: read
 
 jobs:
+  entrypoint-tests:
+    name: Entrypoint contract tests (Stage 1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install jq
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y jq
+          fi
+      - name: Run build-entrypoint shell tests
+        run: bash tests/smoke/run-tests.sh
+
   smoke:
     name: Fixture smoke (Stage 3 enforcement)
     runs-on: ubuntu-latest

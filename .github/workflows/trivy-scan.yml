@@ -8,9 +8,9 @@ on:
       - "hugo/**"
       - ".github/workflows/trivy-scan.yml"
   push:
-    branches: [main]
+    branches: [master]
   schedule:
-    - cron: "0 6 * * 1"   # Weekly rebuild/rescan (Mon 06:00 UTC).
+    - cron: "0 6 * * 1" # Weekly rebuild/rescan (Mon 06:00 UTC).
   workflow_dispatch:
 
 permissions:

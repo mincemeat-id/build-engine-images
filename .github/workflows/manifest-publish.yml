@@ -2,7 +2,7 @@ name: manifest-publish
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - "manifest.json"
       - "schemas/manifest.schema.json"

@@ -10,7 +10,7 @@ on:
       - "hugo/**"
       - ".github/workflows/fixture-smoke.yml"
   push:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
 
 permissions:

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "projects": {
+    "angular-static": {
+      "projectType": "application",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "outputMode": "static",
+            "outputPath": "dist/angular-static"
+          }
+        }
+      }
+    }
+  }
+}

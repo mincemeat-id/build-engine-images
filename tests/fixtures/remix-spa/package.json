@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "mkdir -p build/client && printf '<!doctype html><title>Remix SPA</title>' > build/client/index.html"
+  }
+}

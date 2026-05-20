@@ -1,0 +1,7 @@
+{
+  "framework": "zola",
+  "package_manager": "none",
+  "build_command": "zola build",
+  "output_dir": "public",
+  "root": "."
+}

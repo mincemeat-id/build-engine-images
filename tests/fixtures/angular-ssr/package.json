@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "mkdir -p dist/angular-ssr/browser && printf '<!doctype html><title>Angular SSR</title>' > dist/angular-ssr/browser/index.html"
+  }
+}

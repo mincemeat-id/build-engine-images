@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/smoke/run-warm.sh - Run warm-cache build smoke tests for v1 GA frameworks.
+# tests/smoke/run-warm.sh - Run warm-cache build smoke tests for v1 GA and promoted candidates.
 #
 # A warm build reuses the populated cache directory from the cold run.
 #
@@ -38,6 +38,7 @@ NODE_20_IMG="$(resolve_image node 20)"
 NODE_22_IMG="$(resolve_image node 22)"
 BUN_1_IMG="$(resolve_image bun 1)"
 HUGO_LATEST_IMG="$(resolve_image hugo latest)"
+ZOLA_LATEST_IMG="$(resolve_image zola latest)"
 echo "Images resolved successfully."
 
 # Define positive fixtures to test in warm mode
@@ -50,9 +51,12 @@ declare -a fixtures=(
     "vuepress-docs|$NODE_22_IMG|positive|0"
     "gatsby-blog|$NODE_22_IMG|positive|0"
     "hugo-quickstart|$HUGO_LATEST_IMG|positive|0"
+    "zola-quickstart|$ZOLA_LATEST_IMG|positive|0"
     "nextjs-export|$NODE_22_IMG|positive|0"
     "nuxt-generate|$NODE_22_IMG|positive|0"
     "sveltekit-static|$NODE_22_IMG|positive|0"
+    "angular-static|$NODE_22_IMG|positive|0"
+    "remix-spa|$NODE_22_IMG|positive|0"
     "generic-static|$NODE_20_IMG|positive|0"
 )
 

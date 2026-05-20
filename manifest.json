@@ -5,7 +5,7 @@
   "images": {
     "node:20": {
       "tag": "ghcr.io/mincemeat-id/build-engine-images/node:20-0.0.0",
-      "digest": "sha256:08cbb717b514bebc6ae202c07bc8e702ac944155775d4303d48f3af11b8ceedb",
+      "digest": "sha256:15c478d42cd552e2ca5231f4e07b93b2ce38dd8fdd5d65a8e63155660a091750",
       "frameworks": [
         "astro",
         "vite",
@@ -22,7 +22,7 @@
     },
     "node:22": {
       "tag": "ghcr.io/mincemeat-id/build-engine-images/node:22-0.0.0",
-      "digest": "sha256:dbcb211fbcb0a14fd8af0995f43e6c584764b8254f166563fac3aed840a9d002",
+      "digest": "sha256:99c0c9f9d5234371c9adee95fb422a3374b40422b0e92a10d2c38851cc7e1d6d",
       "frameworks": [
         "astro",
         "vite",
@@ -34,12 +34,14 @@
         "nextjs-export",
         "nuxt-generate",
         "sveltekit-static",
+        "angular-static",
+        "remix-spa",
         "generic"
       ]
     },
     "bun:1": {
       "tag": "ghcr.io/mincemeat-id/build-engine-images/bun:1-0.0.0",
-      "digest": "sha256:aa2503d7729ad90c7bb2f2b891c0cb2cf2b92caa3636e1d4d100bd17d10ae998",
+      "digest": "sha256:5d3e18613805bc98d69947868d3d07fd19925599a19bf8075769e473d65cc9c4",
       "frameworks": [
         "astro",
         "vite",
@@ -48,9 +50,16 @@
     },
     "hugo:latest": {
       "tag": "ghcr.io/mincemeat-id/build-engine-images/hugo:0.0.0",
-      "digest": "sha256:aa699f620bc086d6edd52e8d995dc8f7290e76bb8ceb06fb7185d8cc94cf131b",
+      "digest": "sha256:fe4ce4afa8105c60c2dcf016adb9048551c65770e1ced28ab545fa6f3863b858",
       "frameworks": [
         "hugo"
+      ]
+    },
+    "zola:latest": {
+      "tag": "ghcr.io/mincemeat-id/build-engine-images/zola:0.0.0",
+      "digest": "sha256:c86c6cd67e41577305b701f1182a859bb9f5d7f63833f34a31d77d1e3c185880",
+      "frameworks": [
+        "zola"
       ]
     }
   },

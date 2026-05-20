@@ -1,0 +1,7 @@
+{
+  "framework": "remix",
+  "package_manager": "none",
+  "build_command": "npm run build",
+  "output_dir": "build/client",
+  "root": "."
+}

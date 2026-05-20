@@ -8,6 +8,7 @@ on:
       - "node/**"
       - "bun/**"
       - "hugo/**"
+      - "zola/**"
       - ".github/workflows/fixture-smoke.yml"
   push:
     branches: [master]

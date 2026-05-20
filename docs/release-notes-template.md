@@ -20,9 +20,10 @@ The table below lists the logical images defined in `manifest.json` for this rel
 | Logical Image | Tag | Digest (sha256) | Supported Frameworks |
 |---------------|-----|-----------------|----------------------|
 | `node:20` | `ghcr.io/mincemeat-id/build-engine-images/node:20-<version>` | `<node-20-digest>` | `astro`, `vite`, `eleventy`, `docusaurus`, `vitepress`, `vuepress`, `gatsby`, `nextjs-export`, `nuxt-generate`, `sveltekit-static`, `generic` |
-| `node:22` | `ghcr.io/mincemeat-id/build-engine-images/node:22-<version>` | `<node-22-digest>` | `astro`, `vite`, `eleventy`, `docusaurus`, `vitepress`, `vuepress`, `gatsby`, `nextjs-export`, `nuxt-generate`, `sveltekit-static`, `generic` |
+| `node:22` | `ghcr.io/mincemeat-id/build-engine-images/node:22-<version>` | `<node-22-digest>` | `astro`, `vite`, `eleventy`, `docusaurus`, `vitepress`, `vuepress`, `gatsby`, `nextjs-export`, `nuxt-generate`, `sveltekit-static`, `angular-static`, `remix-spa`, `generic` |
 | `bun:1` | `ghcr.io/mincemeat-id/build-engine-images/bun:1-<version>` | `<bun-1-digest>` | `astro`, `vite`, `generic` |
 | `hugo:latest` | `ghcr.io/mincemeat-id/build-engine-images/hugo:<version>` | `<hugo-digest>` | `hugo` |
+| `zola:latest` | `ghcr.io/mincemeat-id/build-engine-images/zola:<version>` | `<zola-digest>` | `zola` |
 
 ## Base Images Pinned
 
@@ -32,6 +33,7 @@ The table below lists the logical images defined in `manifest.json` for this rel
 | `node:22` | `node:22-bookworm-slim` | `sha256:3ebc208d842067574e826f4fad4d1e996871ccd1b0a565509531c712a3005ccb` |
 | `bun:1` | `oven/bun:1-slim` | `sha256:3ebc208d842067574e826f4fad4d1e996871ccd1b0a565509531c712a3005ccb` (or latest slim build) |
 | `hugo:latest` | `debian:bookworm-slim` | `sha256:f52a2656ba8ab776f3f01c7cb7afc4355ecbc868222b40a33118a1a3cc758223` (or slim build) |
+| `zola:latest` | `debian:bookworm-slim` | `sha256:0104b334637a5f19aa9c983a91b54c89887c0984081f2068983107a6f6c21eeb` |
 
 ## Key Changes in This Release
 

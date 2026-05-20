@@ -6,6 +6,7 @@ on:
       - "node/**"
       - "bun/**"
       - "hugo/**"
+      - "zola/**"
       - "entrypoint/**"
       - ".github/workflows/build-and-publish.yml"
   push:
@@ -33,15 +34,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: set
-        # Stage 2: hard-coded matrix of v1 GA images. A later stage may add
-        # changed-path detection; for now we build all four on every run so
+        # Stage 2/7: hard-coded matrix of v1 GA and promoted candidate images. A later stage may add
+        # changed-path detection; for now we build all supported images on every run so
         # size and smoke reporting stay comprehensive.
         run: |
           echo 'images=[
             {"name":"node","tag":"20","dockerfile":"node/20.Dockerfile"},
             {"name":"node","tag":"22","dockerfile":"node/22.Dockerfile"},
             {"name":"bun","tag":"1","dockerfile":"bun/1.Dockerfile"},
-            {"name":"hugo","tag":"latest","dockerfile":"hugo/latest.Dockerfile"}
+            {"name":"hugo","tag":"latest","dockerfile":"hugo/latest.Dockerfile"},
+            {"name":"zola","tag":"latest","dockerfile":"zola/latest.Dockerfile"}
           ]' | tr -d '\n' >> "$GITHUB_OUTPUT"
           echo "" >> "$GITHUB_OUTPUT"
 
@@ -337,4 +339,3 @@ jobs:
         run: |
           echo "Per-image size summaries are appended to each build job's summary."
           echo "Stage 4 will record digests + sizes into manifest.json on release."
-

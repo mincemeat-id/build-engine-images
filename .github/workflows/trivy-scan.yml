@@ -6,6 +6,7 @@ on:
       - "node/**"
       - "bun/**"
       - "hugo/**"
+      - "zola/**"
       - ".github/workflows/trivy-scan.yml"
   push:
     branches: [master]
@@ -37,6 +38,9 @@ jobs:
           - name: hugo
             tag: latest
             dockerfile: hugo/latest.Dockerfile
+          - name: zola
+            tag: latest
+            dockerfile: zola/latest.Dockerfile
     steps:
       - uses: actions/checkout@v4
 

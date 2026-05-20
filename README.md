@@ -16,6 +16,7 @@ build-engine-images/
 ├── node/                       # Node Dockerfiles (20, 22)
 ├── bun/                        # Bun Dockerfile (1)
 ├── hugo/                       # Hugo Dockerfile (latest)
+├── zola/                       # Zola Dockerfile (latest)
 ├── entrypoint/                 # /build-entrypoint.sh shared by all images
 ├── manifest.json               # Versioned, digest-pinned image manifest
 ├── schemas/                    # JSON schemas (manifest, etc.)
@@ -34,6 +35,17 @@ build-engine-images/
 | `node:22`     | `ghcr.io/mincemeat-id/build-engine-images/node:22-X.Y.Z`      | Default Node image.                        |
 | `bun:1`       | `ghcr.io/mincemeat-id/build-engine-images/bun:1-X.Y.Z`        | Bun package manager / runtime.             |
 | `hugo:latest` | `ghcr.io/mincemeat-id/build-engine-images/hugo:X.Y.Z`         | Hugo static builds.                        |
+| `zola:latest` | `ghcr.io/mincemeat-id/build-engine-images/zola:X.Y.Z`         | Zola static builds.                        |
+
+## V1.x Candidate Promotions
+
+Stage 7 promotes Zola, Angular static output, and Remix SPA output after the
+candidate fixtures pass the same smoke, size, and security gates as the V1 GA
+matrix. Angular static and Remix SPA reuse `node:22`; Zola uses the dedicated
+`zola:latest` image so the Node images stay lean.
+
+See [docs/candidate-evaluation.md](./docs/candidate-evaluation.md) for the
+promotion decision and gate checklist.
 
 See [docs/ghcr-naming.md](./docs/ghcr-naming.md) for the full naming convention.
 
@@ -86,4 +98,3 @@ In the event of a regression or issue with a released image or manifest version,
 ## License
 
 [MIT](./LICENSE) © Mincemeat.
-

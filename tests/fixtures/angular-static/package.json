@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "mkdir -p dist/angular-static/browser && printf '<!doctype html><title>Angular static</title>' > dist/angular-static/browser/index.html"
+  }
+}

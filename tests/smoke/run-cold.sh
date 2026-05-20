@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/smoke/run-cold.sh - Run cold build smoke tests for all v1 GA frameworks.
+# tests/smoke/run-cold.sh - Run cold build smoke tests for v1 GA and promoted candidates.
 #
 # A cold build starts with a clean cache directory.
 #
@@ -35,6 +35,7 @@ NODE_20_IMG="$(resolve_image node 20)"
 NODE_22_IMG="$(resolve_image node 22)"
 BUN_1_IMG="$(resolve_image bun 1)"
 HUGO_LATEST_IMG="$(resolve_image hugo latest)"
+ZOLA_LATEST_IMG="$(resolve_image zola latest)"
 echo "Images resolved successfully."
 
 # Ensure clean cache for cold build
@@ -45,7 +46,7 @@ fi
 mkdir -p "$cache_dir"
 chmod 0777 "$cache_dir"
 
-# Define fixtures to test
+# Define fixtures to test.
 # Format: name | image | type (positive/negative) | expected_code
 declare -a fixtures=(
     "astro-blog|$NODE_22_IMG|positive|0"
@@ -56,12 +57,16 @@ declare -a fixtures=(
     "vuepress-docs|$NODE_22_IMG|positive|0"
     "gatsby-blog|$NODE_22_IMG|positive|0"
     "hugo-quickstart|$HUGO_LATEST_IMG|positive|0"
+    "zola-quickstart|$ZOLA_LATEST_IMG|positive|0"
     "nextjs-export|$NODE_22_IMG|positive|0"
     "nuxt-generate|$NODE_22_IMG|positive|0"
     "sveltekit-static|$NODE_22_IMG|positive|0"
+    "angular-static|$NODE_22_IMG|positive|0"
+    "remix-spa|$NODE_22_IMG|positive|0"
     "generic-static|$NODE_20_IMG|positive|0"
     "nextjs-noexport|$NODE_22_IMG|negative|BUILD_INCOMPATIBLE: NEXTJS_REQUIRES_EXPORT"
     "remix-ssr|$NODE_22_IMG|negative|BUILD_INCOMPATIBLE: REMIX_REQUIRES_SPA_MODE"
+    "angular-ssr|$NODE_22_IMG|negative|BUILD_INCOMPATIBLE: ANGULAR_REQUIRES_STATIC_OUTPUT"
     "sveltekit-node-adapter|$NODE_22_IMG|negative|BUILD_INCOMPATIBLE: SVELTEKIT_REQUIRES_STATIC_ADAPTER"
     "nuxt-ssr-build|$NODE_22_IMG|negative|BUILD_INCOMPATIBLE: NUXT_REQUIRES_GENERATE"
 )

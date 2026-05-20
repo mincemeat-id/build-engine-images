@@ -1,0 +1,7 @@
+{
+  "framework": "angular",
+  "package_manager": "none",
+  "build_command": "npm run build",
+  "output_dir": "dist/angular-static/browser",
+  "root": "."
+}

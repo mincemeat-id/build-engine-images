@@ -94,12 +94,30 @@ fi
 if [ "$framework" = "remix" ]; then
     has_spa=0
     for f in vite.config.js vite.config.ts; do
-        if [ -f "$project_root/$f" ] && grep -q "ssr: false" "$project_root/$f"; then
+        if [ -f "$project_root/$f" ] && grep -Eq "(unstable_)?ssr[[:space:]]*:[[:space:]]*false" "$project_root/$f"; then
             has_spa=1
         fi
     done
     if [ "$has_spa" -eq 0 ]; then
         die "BUILD_INCOMPATIBLE: REMIX_REQUIRES_SPA_MODE"
+    fi
+fi
+
+if [ "$framework" = "angular" ]; then
+    if [ -f "$project_root/angular.json" ]; then
+        if jq -e '
+            [
+              .projects[]? |
+              (.architect.build.options? // .targets.build.options? // {}) |
+              select(
+                .outputMode == "server"
+                or .ssr == true
+                or (.server? | type == "string" and length > 0)
+              )
+            ] | length > 0
+        ' "$project_root/angular.json" >/dev/null; then
+            die "BUILD_INCOMPATIBLE: ANGULAR_REQUIRES_STATIC_OUTPUT"
+        fi
     fi
 fi
 

@@ -17,7 +17,8 @@ on:
 permissions:
   contents: read
   packages: write
-  id-token: write # cosign keyless (added in Stage 5)
+  id-token: write
+  attestations: write
 
 concurrency:
   group: build-and-publish-${{ github.ref }}
@@ -55,10 +56,50 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Calculate Image Tags
+        id: tags
+        run: |
+          VERSION=$(jq -r '.version' manifest.json)
+          RUN_TRACK="${{ matrix.image.tag }}"
+          
+          if [ "$RUN_TRACK" = "latest" ]; then
+            RELEASE_TAG="${VERSION}"
+            PR_TAG="pr-${{ github.event.number || github.event.pull_request.number }}"
+            RC_TAG="${VERSION}-rc.${{ github.run_number }}"
+            NIGHTLY_TAG="nightly-$(date +%Y%m%d)"
+          else
+            RELEASE_TAG="${RUN_TRACK}-${VERSION}"
+            PR_TAG="${RUN_TRACK}-pr-${{ github.event.number || github.event.pull_request.number }}"
+            RC_TAG="${RUN_TRACK}-${VERSION}-rc.${{ github.run_number }}"
+            NIGHTLY_TAG="${RUN_TRACK}-nightly-$(date +%Y%m%d)"
+          fi
+          
+          if [ "${{ github.event_name }}" = "release" ]; then
+            ACTIVE_TAG="$RELEASE_TAG"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            ACTIVE_TAG="$RC_TAG"
+          else
+            ACTIVE_TAG="$PR_TAG"
+          fi
+          
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "active_tag=$ACTIVE_TAG" >> "$GITHUB_OUTPUT"
+          echo "rc_tag=$RC_TAG" >> "$GITHUB_OUTPUT"
+          echo "pr_tag=$PR_TAG" >> "$GITHUB_OUTPUT"
+          echo "nightly_tag=$NIGHTLY_TAG" >> "$GITHUB_OUTPUT"
+          
+          echo "Calculated tags:"
+          echo "  Release tag: $RELEASE_TAG"
+          echo "  Active tag: $ACTIVE_TAG"
+          echo "  RC tag: $RC_TAG"
+          echo "  PR tag: $PR_TAG"
+          echo "  Nightly tag: $NIGHTLY_TAG"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Build image (load locally for size + smoke)
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -117,6 +158,78 @@ jobs:
             "build-engine-images/${{ matrix.image.name }}:${{ matrix.image.tag }}-ci"
           test -f "$work/out/index.html"
           grep -q "smoke ok" "$work/out/index.html"
+
+      - name: Run Trivy vulnerability scanner (JSON)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: 'build-engine-images/${{ matrix.image.name }}:${{ matrix.image.tag }}-ci'
+          format: 'json'
+          output: 'trivy-results.json'
+
+      - name: Enforce CVE Budget
+        run: |
+          python scripts/enforce_cve_budget.py --report trivy-results.json --exceptions security-exceptions.json
+
+      - name: Generate CycloneDX SBOM
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: 'build-engine-images/${{ matrix.image.name }}:${{ matrix.image.tag }}-ci'
+          format: 'cyclonedx'
+          output: 'sbom.json'
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.image.name }}-${{ matrix.image.tag }}
+          path: sbom.json
+          retention-days: 7
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and push image
+        if: github.event_name != 'pull_request'
+        id: push
+        run: |
+          LOCAL_TAG="build-engine-images/${{ matrix.image.name }}:${{ matrix.image.tag }}-ci"
+          REMOTE_TAG="ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}:${{ steps.tags.outputs.active_tag }}"
+          docker tag "$LOCAL_TAG" "$REMOTE_TAG"
+          docker push "$REMOTE_TAG"
+          
+          # Extract digest
+          DIGEST=$(docker image inspect "$REMOTE_TAG" --format '{{range .RepoDigests}}{{.}}{{end}}' | cut -d'@' -f2)
+          if [ -z "$DIGEST" ]; then
+            DIGEST=$(docker image inspect "$REMOTE_TAG" --format '{{.Id}}' | cut -d':' -f2)
+          fi
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+
+      - name: Install Cosign
+        if: github.event_name != 'pull_request'
+        uses: sigstore/cosign-installer@v3.5.0
+
+      - name: Sign published image
+        if: github.event_name != 'pull_request'
+        run: |
+          cosign sign --yes "ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}@sha256:${{ steps.push.outputs.digest }}"
+
+      - name: Generate SLSA provenance attestation (Push)
+        uses: actions/attest-build-provenance@v1
+        if: github.event_name != 'pull_request'
+        with:
+          subject-name: ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}
+          subject-digest: sha256:${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Attest build provenance for Dockerfile (PR)
+        uses: actions/attest-build-provenance@v1
+        if: github.event_name == 'pull_request'
+        with:
+          subject-path: ${{ matrix.image.dockerfile }}
 
   size-report:
     name: Aggregate image size report

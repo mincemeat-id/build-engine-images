@@ -1,0 +1,9 @@
+{
+  "exceptions": [
+    {
+      "cve": "CVE-2026-EXAMPLE",
+      "reason": "This is an example entry showing how to ignore a specific CVE. It is expired and will be ignored by the check.",
+      "expiry": "2026-01-01"
+    }
+  ]
+}

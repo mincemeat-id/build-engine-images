@@ -16,6 +16,7 @@ cache_dir="$here/cache"
 # Ensure clean cache for cold build
 rm -rf "$cache_dir"
 mkdir -p "$cache_dir"
+chmod 0777 "$cache_dir"
 
 resolve_image() {
     local name="$1"
@@ -71,23 +72,26 @@ for entry in "${fixtures[@]}"; do
     echo "Running fixture: $name on $img ($type)..."
     
     fixture_dir="$repo_root/tests/fixtures/$name"
-    manifest_file="$fixture_dir/manifest.json"
     
     if [ ! -d "$fixture_dir" ]; then
         echo "Error: Fixture directory $fixture_dir does not exist." >&2
         exit 2
     fi
     
-    # Create temp out dir
+    # Stage writable mounts for the non-root builder user used by the images.
+    src_dir="$(mktemp -d)"
     out_dir="$(mktemp -d)"
     log_file="$(mktemp)"
+    cp -a "$fixture_dir/." "$src_dir/"
+    chmod -R a+rwX "$src_dir" "$out_dir"
+    manifest_file="$src_dir/manifest.json"
     
     start_time=$(date +%s.%N)
     
     set +e
     docker run --rm \
         -v "$manifest_file:/build/manifest.json:ro" \
-        -v "$fixture_dir:/workspace/src" \
+        -v "$src_dir:/workspace/src" \
         -v "$out_dir:/workspace/out" \
         -v "$cache_dir:/cache" \
         "$img" > "$log_file" 2>&1
@@ -138,7 +142,7 @@ for entry in "${fixtures[@]}"; do
     fi
     
     # Cleanup out/log
-    rm -rf "$out_dir"
+    rm -rf "$src_dir" "$out_dir"
     
     if [ "$pass" -eq 1 ]; then
         echo "  PASSED ($duration_fmt s)"

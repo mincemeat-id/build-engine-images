@@ -1,11 +1,11 @@
 {
   "$schema": "./schemas/manifest.schema.json",
   "version": "0.0.0",
-  "generated_at": "2026-05-20T00:00:00Z",
+  "generated_at": "2026-05-20T05:39:15.738038Z",
   "images": {
     "node:20": {
       "tag": "ghcr.io/mincemeat-id/build-engine-images/node:20-0.0.0",
-      "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "digest": "sha256:08cbb717b514bebc6ae202c07bc8e702ac944155775d4303d48f3af11b8ceedb",
       "frameworks": [
         "astro",
         "vite",
@@ -22,7 +22,7 @@
     },
     "node:22": {
       "tag": "ghcr.io/mincemeat-id/build-engine-images/node:22-0.0.0",
-      "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "digest": "sha256:dbcb211fbcb0a14fd8af0995f43e6c584764b8254f166563fac3aed840a9d002",
       "frameworks": [
         "astro",
         "vite",
@@ -39,13 +39,19 @@
     },
     "bun:1": {
       "tag": "ghcr.io/mincemeat-id/build-engine-images/bun:1-0.0.0",
-      "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-      "frameworks": ["astro", "vite", "generic"]
+      "digest": "sha256:aa2503d7729ad90c7bb2f2b891c0cb2cf2b92caa3636e1d4d100bd17d10ae998",
+      "frameworks": [
+        "astro",
+        "vite",
+        "generic"
+      ]
     },
     "hugo:latest": {
       "tag": "ghcr.io/mincemeat-id/build-engine-images/hugo:0.0.0",
-      "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-      "frameworks": ["hugo"]
+      "digest": "sha256:aa699f620bc086d6edd52e8d995dc8f7290e76bb8ceb06fb7185d8cc94cf131b",
+      "frameworks": [
+        "hugo"
+      ]
     }
   },
   "engine_compat": {

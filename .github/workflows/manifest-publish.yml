@@ -32,24 +32,7 @@ jobs:
       - name: Install jsonschema
         run: pip install --quiet "jsonschema==4.*"
       - name: Validate manifest.json
-        run: |
-          python - <<'PY'
-          import json, sys
-          from jsonschema import Draft202012Validator
-          with open("schemas/manifest.schema.json") as f:
-              schema = json.load(f)
-          with open("manifest.json") as f:
-              data = json.load(f)
-          Draft202012Validator.check_schema(schema)
-          v = Draft202012Validator(schema)
-          errors = sorted(v.iter_errors(data), key=lambda e: list(e.path))
-          if errors:
-              for e in errors:
-                  loc = "/".join(str(p) for p in e.path) or "<root>"
-                  print(f"::error file=manifest.json::{loc}: {e.message}")
-              sys.exit(1)
-          print("manifest.json passes schema validation.")
-          PY
+        run: python scripts/generate_manifest.py --validate-only
 
   publish:
     name: Publish manifest artifact (Stage 6 enforcement)

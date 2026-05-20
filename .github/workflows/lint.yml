@@ -39,6 +39,8 @@ jobs:
             exit 0
           fi
           docker run --rm -i \
+            -v "$PWD:/workspace:ro" \
+            -w /workspace \
             -v "$PWD/.hadolint.yaml:/.config/hadolint.yaml:ro" \
             hadolint/hadolint:latest-debian \
             hadolint "${files[@]}"

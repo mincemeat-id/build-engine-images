@@ -282,6 +282,7 @@ jobs:
       - name: Download all digest artifacts
         uses: actions/download-artifact@v4
         with:
+          pattern: digest-info-*
           path: digest-artifacts
 
       - name: Generate updated manifest.json

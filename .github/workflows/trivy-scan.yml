@@ -55,7 +55,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}-${{ matrix.image.tag }}-scan
 
       - name: Run Trivy vulnerability scanner (JSON)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: 'build-engine-images/${{ matrix.image.name }}:${{ matrix.image.tag }}-ci'
           format: 'json'
@@ -66,7 +66,7 @@ jobs:
           python scripts/enforce_cve_budget.py --report trivy-results.json --exceptions security-exceptions.json
 
       - name: Run Trivy vulnerability scanner (SARIF)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         if: always()
         with:
           image-ref: 'build-engine-images/${{ matrix.image.name }}:${{ matrix.image.tag }}-ci'

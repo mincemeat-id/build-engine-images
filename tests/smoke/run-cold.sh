@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/smoke/run-cold.sh - Run cold build smoke tests for v1 GA and promoted candidates.
+# tests/smoke/run-cold.sh - Run cold build smoke tests for all supported framework fixtures.
 #
 # A cold build starts with a clean cache directory.
 #

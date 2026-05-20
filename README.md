@@ -3,31 +3,10 @@
 Curated, auditable Docker images used by the Mincemeat standalone build engine.
 
 Images are published to the GitHub Container Registry (GHCR) as public artifacts
-with pinned digests, CycloneDX SBOMs, SLSA provenance, cosign signatures, and
-a versioned [`manifest.json`](./manifest.json) consumed by the build engine.
+with pinned digests, CycloneDX SBOMs, SLSA provenance, cosign signatures, and a
+versioned [`manifest.json`](./manifest.json) consumed by the build engine.
 
-See [build-engine-images-design.md](./build-engine-images-design.md) for the
-full design, goals, non-goals, and staged implementation plan.
-
-## Repository Layout
-
-```text
-build-engine-images/
-├── node/                       # Node Dockerfiles (20, 22)
-├── bun/                        # Bun Dockerfile (1)
-├── hugo/                       # Hugo Dockerfile (latest)
-├── zola/                       # Zola Dockerfile (latest)
-├── entrypoint/                 # /build-entrypoint.sh shared by all images
-├── manifest.json               # Versioned, digest-pinned image manifest
-├── schemas/                    # JSON schemas (manifest, etc.)
-├── docs/                       # Conventions and process docs
-├── tests/
-│   ├── fixtures/               # Positive & negative framework fixtures
-│   └── smoke/                  # Cold/warm smoke scripts
-└── .github/workflows/          # CI: build, scan, smoke, manifest publish
-```
-
-## V1 GA Image Matrix
+## Image Matrix
 
 | Logical Image | GHCR Tag Pattern                                              | Purpose                                    |
 |---------------|---------------------------------------------------------------|--------------------------------------------|
@@ -37,49 +16,17 @@ build-engine-images/
 | `hugo:latest` | `ghcr.io/mincemeat-id/build-engine-images/hugo:X.Y.Z`         | Hugo static builds.                        |
 | `zola:latest` | `ghcr.io/mincemeat-id/build-engine-images/zola:X.Y.Z`         | Zola static builds.                        |
 
-## V1.x Candidate Promotions
-
-Stage 7 promotes Zola, Angular static output, and Remix SPA output after the
-candidate fixtures pass the same smoke, size, and security gates as the V1 GA
-matrix. Angular static and Remix SPA reuse `node:22`; Zola uses the dedicated
-`zola:latest` image so the Node images stay lean.
-
-See [docs/candidate-evaluation.md](./docs/candidate-evaluation.md) for the
-promotion decision and gate checklist.
-
-See [docs/ghcr-naming.md](./docs/ghcr-naming.md) for the full naming convention.
-
-## Entrypoint Contract (summary)
-
-All images ship `/build-entrypoint.sh` and read:
-
-| Path / Env             | Purpose                                                                       |
-|------------------------|-------------------------------------------------------------------------------|
-| `/build/manifest.json` | Build command, package manager, output dir, framework, root, env metadata.    |
-| `/workspace/src`       | Source root mount.                                                            |
-| `/workspace/out`       | Normalized output mount.                                                      |
-| `/cache`               | Package-manager cache mount.                                                  |
-
-Full contract: see "Entrypoint Contract" in
-[build-engine-images-design.md](./build-engine-images-design.md).
+Pull by digest from [`manifest.json`](./manifest.json) — never by floating tag.
 
 ## Manifest
 
-`manifest.json` is the contract between this repo and `build-engine`. Schema:
-[schemas/manifest.schema.json](./schemas/manifest.schema.json).
-
-Rules:
+`manifest.json` is the contract between this repo and `build-engine`:
 
 - Manifest version is immutable once released.
-- Every image entry must include a digest.
-- Engine pulls by digest when available.
+- Every image entry includes a `sha256:` digest.
+- Engine pulls by digest.
 
-## Local Development
-
-Prerequisites: Docker, `make`, `bash`, `shellcheck`, `hadolint` (optional but
-recommended).
-
-The repo is in Stage 0 (scaffold). Build/test scripts are added in Stages 1-3.
+Schema: [schemas/manifest.schema.json](./schemas/manifest.schema.json).
 
 ## Security
 
@@ -89,11 +36,18 @@ The repo is in Stage 0 (scaffold). Build/test scripts are added in Stages 1-3.
 - SLSA provenance attached.
 - Weekly rebuild scan.
 
-CVE budget and secret policy: see "Security And Supply Chain" in the design doc.
+CVE budget and secret policy: see [docs/design.md](./docs/design.md) and
+[SECURITY.md](./SECURITY.md).
 
-## Rollback
+Report vulnerabilities privately via [SECURITY.md](./SECURITY.md).
 
-In the event of a regression or issue with a released image or manifest version, see [docs/rollback.md](./docs/rollback.md) for the rollback procedure.
+## Documentation
+
+- [docs/design.md](./docs/design.md) — full design, goals, contracts.
+- [docs/ghcr-naming.md](./docs/ghcr-naming.md) — GHCR package and tag conventions.
+- [docs/rollback.md](./docs/rollback.md) — rollback procedure.
+- [docs/security-exceptions.md](./docs/security-exceptions.md) — CVE exception process.
+- [docs/release-notes-template.md](./docs/release-notes-template.md) — release notes template.
 
 ## License
 

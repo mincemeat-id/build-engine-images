@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/smoke/run-tests.sh - Stage 1 shell tests for build-entrypoint.sh.
+# tests/smoke/run-tests.sh - shell tests for build-entrypoint.sh.
 #
 # Each test is a file matching tests/smoke/test_*.sh. Tests are run in their
 # own subshell. A test passes when it exits 0.

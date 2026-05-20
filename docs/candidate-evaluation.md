@@ -1,8 +1,8 @@
-# V1.x Candidate Evaluation
+# Candidate Image Evaluation
 
-Stage 7 promotes the V1.x candidates into the supported manifest only when
-the same fixture, documentation, image size, and scan gates used for V1 GA
-images pass.
+New candidate frameworks are promoted into the supported manifest only when
+they pass the same fixture, documentation, image size, and scan gates used
+for existing images.
 
 ## Image Strategy
 

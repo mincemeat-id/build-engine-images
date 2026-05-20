@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # /build-entrypoint.sh - shared entrypoint for build-engine-images.
 #
-# Contract (see build-engine-images-design.md "Entrypoint Contract"):
+# Contract (see docs/design.md "Entrypoint Contract"):
 #   Inputs (mounted by the build engine):
 #     /build/manifest.json   Build manifest (framework, package_manager,
 #                            root, install_command, build_command,

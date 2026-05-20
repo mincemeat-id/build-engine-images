@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/smoke/run-warm.sh - Run warm-cache build smoke tests for v1 GA and promoted candidates.
+# tests/smoke/run-warm.sh - Run warm-cache build smoke tests for all supported framework fixtures.
 #
 # A warm build reuses the populated cache directory from the cold run.
 #

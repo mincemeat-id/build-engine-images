@@ -58,8 +58,8 @@ Every published image MUST carry the following OCI annotations / labels:
 
 ## Visibility
 
-- All packages MUST be **public** GHCR packages in v1.
-- No private registry dependency is allowed for v1 GA.
+- All packages MUST be **public** GHCR packages.
+- No private registry dependency is allowed.
 
 ## Digest Pinning
 

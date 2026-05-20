@@ -32,8 +32,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: set
-        # Stage 0 skeleton: the matrix is hard-coded here; Stage 2 replaces
-        # this with detection driven by changed paths + manifest.json.
+        # Stage 2: hard-coded matrix of v1 GA images. A later stage may add
+        # changed-path detection; for now we build all four on every run so
+        # size and smoke reporting stay comprehensive.
         run: |
           echo 'images=[
             {"name":"node","tag":"20","dockerfile":"node/20.Dockerfile"},
@@ -53,10 +54,77 @@ jobs:
         image: ${{ fromJson(needs.matrix.outputs.images) }}
     steps:
       - uses: actions/checkout@v4
-      - name: Stage 0 placeholder
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (load locally for size + smoke)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.image.dockerfile }}
+          load: true
+          push: false
+          tags: build-engine-images/${{ matrix.image.name }}:${{ matrix.image.tag }}-ci
+          cache-from: type=gha,scope=${{ matrix.image.name }}-${{ matrix.image.tag }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}-${{ matrix.image.tag }}
+
+      - name: Report image size
+        id: size
         run: |
-          echo "Stage 0 scaffold: build for ${{ matrix.image.name }}:${{ matrix.image.tag }}"
-          echo "Dockerfile (expected at Stage 2): ${{ matrix.image.dockerfile }}"
-          if [ ! -f "${{ matrix.image.dockerfile }}" ]; then
-            echo "::notice::Dockerfile not yet present; will be added in Stage 2."
-          fi
+          tag="build-engine-images/${{ matrix.image.name }}:${{ matrix.image.tag }}-ci"
+          bytes=$(docker image inspect "$tag" --format '{{.Size}}')
+          mib=$(awk "BEGIN { printf \"%.1f\", $bytes / 1024 / 1024 }")
+          echo "bytes=$bytes" >> "$GITHUB_OUTPUT"
+          echo "mib=$mib" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Image size: \`${{ matrix.image.name }}:${{ matrix.image.tag }}\`"
+            echo
+            echo "| Image | Size (bytes) | Size (MiB) |"
+            echo "|-------|--------------|------------|"
+            echo "| ${{ matrix.image.name }}:${{ matrix.image.tag }} | $bytes | $mib |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload size record
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-size-${{ matrix.image.name }}-${{ matrix.image.tag }}
+          path: |
+            ${{ matrix.image.dockerfile }}
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Smoke entrypoint (manifest validation + generic build)
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          mkdir -p "$work/src" "$work/out" "$work/cache" "$work/build"
+          chmod -R 0777 "$work"
+          cat > "$work/build/manifest.json" <<'EOF'
+          {
+            "framework": "generic",
+            "package_manager": "none",
+            "build_command": "mkdir -p dist && echo '<html><body>smoke ok</body></html>' > dist/index.html",
+            "output_dir": "dist",
+            "root": "."
+          }
+          EOF
+          docker run --rm \
+            -v "$work/build:/build:ro" \
+            -v "$work/src:/workspace/src" \
+            -v "$work/out:/workspace/out" \
+            -v "$work/cache:/cache" \
+            "build-engine-images/${{ matrix.image.name }}:${{ matrix.image.tag }}-ci"
+          test -f "$work/out/index.html"
+          grep -q "smoke ok" "$work/out/index.html"
+
+  size-report:
+    name: Aggregate image size report
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Note
+        run: |
+          echo "Per-image size summaries are appended to each build job's summary."
+          echo "Stage 4 will record digests + sizes into manifest.json on release."

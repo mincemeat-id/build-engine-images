@@ -126,6 +126,12 @@ for entry in "${fixtures[@]}"; do
     fi
     
     # Cleanup out/log
+    if [ -d "$src_dir" ]; then
+        docker run --rm --entrypoint rm --user root -v "$(dirname "$src_dir"):$(dirname "$src_dir")" "$img" -rf "$src_dir" || true
+    fi
+    if [ -d "$out_dir" ]; then
+        docker run --rm --entrypoint rm --user root -v "$(dirname "$out_dir"):$(dirname "$out_dir")" "$img" -rf "$out_dir" || true
+    fi
     rm -rf "$src_dir" "$out_dir"
     
     if [ "$pass" -eq 1 ]; then

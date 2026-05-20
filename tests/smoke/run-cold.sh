@@ -13,10 +13,8 @@ here="$(cd "$(dirname "$0")" && pwd)"
 repo_root="$(cd "$here/../.." && pwd)"
 cache_dir="$here/cache"
 
-# Ensure clean cache for cold build
-rm -rf "$cache_dir"
-mkdir -p "$cache_dir"
-chmod 0777 "$cache_dir"
+# Ensure clean cache for cold build - will be cleaned up after resolving images
+
 
 resolve_image() {
     local name="$1"
@@ -38,6 +36,14 @@ NODE_22_IMG="$(resolve_image node 22)"
 BUN_1_IMG="$(resolve_image bun 1)"
 HUGO_LATEST_IMG="$(resolve_image hugo latest)"
 echo "Images resolved successfully."
+
+# Ensure clean cache for cold build
+if [ -d "$cache_dir" ]; then
+    docker run --rm --entrypoint rm --user root -v "$(dirname "$cache_dir"):$(dirname "$cache_dir")" "$NODE_22_IMG" -rf "$cache_dir" || true
+    rm -rf "$cache_dir"
+fi
+mkdir -p "$cache_dir"
+chmod 0777 "$cache_dir"
 
 # Define fixtures to test
 # Format: name | image | type (positive/negative) | expected_code
@@ -142,6 +148,12 @@ for entry in "${fixtures[@]}"; do
     fi
     
     # Cleanup out/log
+    if [ -d "$src_dir" ]; then
+        docker run --rm --entrypoint rm --user root -v "$(dirname "$src_dir"):$(dirname "$src_dir")" "$img" -rf "$src_dir" || true
+    fi
+    if [ -d "$out_dir" ]; then
+        docker run --rm --entrypoint rm --user root -v "$(dirname "$out_dir"):$(dirname "$out_dir")" "$img" -rf "$out_dir" || true
+    fi
     rm -rf "$src_dir" "$out_dir"
     
     if [ "$pass" -eq 1 ]; then

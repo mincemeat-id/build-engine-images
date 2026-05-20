@@ -153,6 +153,10 @@ mkdir -p "$WORKSPACE_OUT"
 find "$WORKSPACE_OUT" -mindepth 1 -delete
 
 log "copying $output_src -> $WORKSPACE_OUT"
-cp -a "$output_src/." "$WORKSPACE_OUT/"
+# Copy each top-level child individually so file mode/timestamps are preserved
+# but cp never tries to update metadata on $WORKSPACE_OUT itself. The output
+# mount is typically owned by the host runner UID, and a non-root container
+# user cannot utime()/chmod() that directory.
+find "$output_src" -mindepth 1 -maxdepth 1 -exec cp -a -t "$WORKSPACE_OUT/" {} +
 
 log "done"

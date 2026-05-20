@@ -20,6 +20,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # /build-entrypoint.sh.
 # hadolint ignore=DL3008
 RUN apt-get update \
+    && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
@@ -40,5 +41,7 @@ RUN chmod 0755 /build-entrypoint.sh \
 WORKDIR /workspace/src
 
 USER bun
+
+HEALTHCHECK NONE
 
 ENTRYPOINT ["/build-entrypoint.sh"]

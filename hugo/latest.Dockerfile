@@ -2,17 +2,35 @@
 #
 # Mincemeat build-engine image: hugo:latest
 #
-# Base: debian:bookworm-slim, pinned by digest. Hugo extended is downloaded
-# from the official GitHub release and verified against a recorded SHA-256.
+# Base: debian:bookworm-slim, pinned by digest. Hugo extended is built from
+# the official module tag with a pinned Go toolchain so stdlib CVE fixes can
+# land before upstream publishes a binary built with that Go patch release.
 #
 # Refresh the base digest with:
 #   docker buildx imagetools inspect debian:bookworm-slim --format '{{.Manifest.Digest}}'
-# Refresh Hugo with the checksums file at:
-#   https://github.com/gohugoio/hugo/releases/download/v<HUGO_VERSION>/hugo_<HUGO_VERSION>_checksums.txt
+# Refresh the Go builder digest with:
+#   docker buildx imagetools inspect golang:<GO_VERSION>-bookworm --format '{{.Manifest.Digest}}'
+ARG GO_VERSION=1.26.3
+FROM golang:${GO_VERSION}-bookworm@sha256:42c54f63d17473e15b9dbfb86043a2cea5edb295d6c99d46f9aa5826943a6752 AS hugo-builder
+
+ARG HUGO_VERSION=0.161.1
+
+ENV CGO_ENABLED=1 \
+    GOFLAGS="-trimpath -buildvcs=false"
+
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+        g++ \
+        git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN go install -tags extended "github.com/gohugoio/hugo@v${HUGO_VERSION}" \
+    && /go/bin/hugo version
+
 FROM debian:bookworm-slim@sha256:0104b334637a5f19aa9c983a91b54c89887c0984081f2068983107a6f6c21eeb
 
 ARG HUGO_VERSION=0.161.1
-ARG HUGO_SHA256=9b82cf3211b2321f189a005dd157e6f4bd5c65f2bf5e9eefd2f5e0803c12103c
 
 LABEL org.opencontainers.image.source="https://github.com/mincemeat-id/build-engine-images" \
       org.opencontainers.image.title="hugo:latest" \
@@ -26,6 +44,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # curl, git, jq (for entrypoint), tar, xz-utils, plus libc6 already in base.
 # hadolint ignore=DL3008
 RUN apt-get update \
+    && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
@@ -35,16 +54,8 @@ RUN apt-get update \
         xz-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Hugo extended (verified by checksum, no pipes -> hadolint clean).
-RUN set -eux \
-    && curl -fsSL -o /tmp/hugo.tar.gz \
-        "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz" \
-    && printf '%s  /tmp/hugo.tar.gz\n' "${HUGO_SHA256}" > /tmp/hugo.sha256 \
-    && sha256sum -c /tmp/hugo.sha256 \
-    && tar -xzf /tmp/hugo.tar.gz -C /tmp hugo \
-    && install -m 0755 /tmp/hugo /usr/local/bin/hugo \
-    && rm -f /tmp/hugo /tmp/hugo.tar.gz /tmp/hugo.sha256 \
-    && hugo version
+COPY --from=hugo-builder /go/bin/hugo /usr/local/bin/hugo
+RUN hugo version
 
 # Non-root builder user (Hugo image has no upstream user).
 RUN groupadd --gid 1000 builder \
@@ -58,5 +69,7 @@ RUN chmod 0755 /build-entrypoint.sh
 WORKDIR /workspace/src
 
 USER builder
+
+HEALTHCHECK NONE
 
 ENTRYPOINT ["/build-entrypoint.sh"]

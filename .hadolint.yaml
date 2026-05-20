@@ -8,7 +8,9 @@ failure-threshold: warning
 # intentionally tracked by upstream "latest" until we cut a release tag.
 ignored:
   - DL3008  # Pin apt-get versions: handled via lockfile/policy in Stage 2.
+  - DL3005  # Security images intentionally apply distro upgrades before scan.
   - DL3018  # Pin apk versions: alpine not used in v1 GA.
+  - DL3062  # go install is pinned through ARG HUGO_VERSION in the Dockerfile.
 
 trustedRegistries:
   - docker.io

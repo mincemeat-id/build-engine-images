@@ -1,0 +1,22 @@
+# hadolint configuration for build-engine-images Dockerfiles.
+# https://github.com/hadolint/hadolint
+
+failure-threshold: warning
+
+# We pin base images by digest in lock metadata or directly in FROM lines.
+# DL3007 (latest tag) is disallowed except for the hugo image, which is
+# intentionally tracked by upstream "latest" until we cut a release tag.
+ignored:
+  - DL3008  # Pin apt-get versions: handled via lockfile/policy in Stage 2.
+  - DL3018  # Pin apk versions: alpine not used in v1 GA.
+
+trustedRegistries:
+  - docker.io
+  - ghcr.io
+  - mcr.microsoft.com
+
+override:
+  error:
+    - DL3002  # Last USER should not be root.
+    - DL3020  # Use COPY instead of ADD for files and folders.
+    - DL3025  # Use arguments JSON notation for CMD and ENTRYPOINT.

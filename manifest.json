@@ -1,0 +1,56 @@
+{
+  "$schema": "./schemas/manifest.schema.json",
+  "version": "0.0.0",
+  "generated_at": "2026-05-20T00:00:00Z",
+  "images": {
+    "node:20": {
+      "tag": "ghcr.io/mincemeat-id/build-engine-images/node:20-0.0.0",
+      "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "frameworks": [
+        "astro",
+        "vite",
+        "eleventy",
+        "docusaurus",
+        "vitepress",
+        "vuepress",
+        "gatsby",
+        "nextjs-export",
+        "nuxt-generate",
+        "sveltekit-static",
+        "generic"
+      ]
+    },
+    "node:22": {
+      "tag": "ghcr.io/mincemeat-id/build-engine-images/node:22-0.0.0",
+      "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "frameworks": [
+        "astro",
+        "vite",
+        "eleventy",
+        "docusaurus",
+        "vitepress",
+        "vuepress",
+        "gatsby",
+        "nextjs-export",
+        "nuxt-generate",
+        "sveltekit-static",
+        "generic"
+      ]
+    },
+    "bun:1": {
+      "tag": "ghcr.io/mincemeat-id/build-engine-images/bun:1-0.0.0",
+      "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "frameworks": ["astro", "vite", "generic"]
+    },
+    "hugo:latest": {
+      "tag": "ghcr.io/mincemeat-id/build-engine-images/hugo:0.0.0",
+      "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "frameworks": ["hugo"]
+    }
+  },
+  "engine_compat": {
+    "proto_min": 1,
+    "proto_max": 1,
+    "engine_min": "1.0.0"
+  }
+}

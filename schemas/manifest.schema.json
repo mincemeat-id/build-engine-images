@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/mincemeat-id/build-engine-images/main/schemas/manifest.schema.json",
+  "title": "build-engine-images manifest",
+  "description": "Versioned, digest-pinned manifest of curated builder images consumed by mincemeat-id/build-engine.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "generated_at", "images", "engine_compat"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional editor hint pointing at this schema."
+    },
+    "version": {
+      "type": "string",
+      "description": "Immutable semver of this manifest release.",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "RFC3339 / ISO 8601 UTC timestamp at which the manifest was produced.",
+      "format": "date-time"
+    },
+    "images": {
+      "type": "object",
+      "description": "Logical image name (e.g. 'node:22') -> image entry.",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z0-9][a-z0-9._-]*(?::[A-Za-z0-9._-]+)?$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/imageEntry"
+      }
+    },
+    "engine_compat": {
+      "type": "object",
+      "description": "Build-engine compatibility envelope this manifest declares support for.",
+      "additionalProperties": false,
+      "required": ["proto_min", "proto_max", "engine_min"],
+      "properties": {
+        "proto_min": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Minimum supported engine<->image protocol version."
+        },
+        "proto_max": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum supported engine<->image protocol version."
+        },
+        "engine_min": {
+          "type": "string",
+          "description": "Minimum build-engine semver compatible with this manifest.",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "imageEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tag", "digest", "frameworks"],
+      "properties": {
+        "tag": {
+          "type": "string",
+          "description": "Fully qualified GHCR tag, e.g. ghcr.io/mincemeat-id/build-engine-images/node:22-1.0.0.",
+          "pattern": "^ghcr\\.io/[a-z0-9._/-]+:[A-Za-z0-9._-]+$"
+        },
+        "digest": {
+          "type": "string",
+          "description": "Image manifest digest (sha256:...).",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "frameworks": {
+          "type": "array",
+          "description": "Framework ids this image officially supports.",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]*$"
+          }
+        }
+      }
+    }
+  }
+}

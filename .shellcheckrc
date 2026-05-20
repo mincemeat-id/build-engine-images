@@ -1,0 +1,6 @@
+# shellcheck configuration for build-engine-images.
+# https://www.shellcheck.net/wiki/
+
+shell=bash
+external-sources=true
+severity=style

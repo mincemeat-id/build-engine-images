@@ -1,0 +1,52 @@
+name: lint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          mapfile -t files < <(git ls-files '*.sh' 'entrypoint/*')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No shell scripts to lint yet (Stage 1 adds /build-entrypoint.sh)."
+            exit 0
+          fi
+          shellcheck "${files[@]}"
+
+  hadolint:
+    name: hadolint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run hadolint
+        run: |
+          mapfile -t files < <(git ls-files '*.Dockerfile' 'Dockerfile' '*/Dockerfile')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No Dockerfiles to lint yet (Stage 2 adds the v1 GA images)."
+            exit 0
+          fi
+          docker run --rm -i \
+            -v "$PWD/.hadolint.yaml:/.config/hadolint.yaml:ro" \
+            hadolint/hadolint:latest-debian \
+            hadolint "${files[@]}"
+
+  editorconfig:
+    name: editorconfig-checker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run editorconfig-checker
+        uses: editorconfig-checker/action-editorconfig-checker@main

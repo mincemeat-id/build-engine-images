@@ -1,0 +1,62 @@
+name: build-and-publish
+
+on:
+  pull_request:
+    paths:
+      - "node/**"
+      - "bun/**"
+      - "hugo/**"
+      - "entrypoint/**"
+      - ".github/workflows/build-and-publish.yml"
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write   # cosign keyless (added in Stage 5)
+
+concurrency:
+  group: build-and-publish-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  matrix:
+    name: Resolve image matrix
+    runs-on: ubuntu-latest
+    outputs:
+      images: ${{ steps.set.outputs.images }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: set
+        # Stage 0 skeleton: the matrix is hard-coded here; Stage 2 replaces
+        # this with detection driven by changed paths + manifest.json.
+        run: |
+          echo 'images=[
+            {"name":"node","tag":"20","dockerfile":"node/20.Dockerfile"},
+            {"name":"node","tag":"22","dockerfile":"node/22.Dockerfile"},
+            {"name":"bun","tag":"1","dockerfile":"bun/1.Dockerfile"},
+            {"name":"hugo","tag":"latest","dockerfile":"hugo/latest.Dockerfile"}
+          ]' | tr -d '\n' >> "$GITHUB_OUTPUT"
+          echo "" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: build ${{ matrix.image.name }}:${{ matrix.image.tag }}
+    needs: matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJson(needs.matrix.outputs.images) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stage 0 placeholder
+        run: |
+          echo "Stage 0 scaffold: build for ${{ matrix.image.name }}:${{ matrix.image.tag }}"
+          echo "Dockerfile (expected at Stage 2): ${{ matrix.image.dockerfile }}"
+          if [ ! -f "${{ matrix.image.dockerfile }}" ]; then
+            echo "::notice::Dockerfile not yet present; will be added in Stage 2."
+          fi

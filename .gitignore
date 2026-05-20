@@ -1,0 +1,28 @@
+# Build/test scratch
+.tmp/
+tmp/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local artifact dirs (smoke tests write here)
+tests/smoke/.work/
+tests/smoke/out/
+tests/smoke/cache/
+
+# Node fixture installs (fixtures should ship lockfiles, not node_modules)
+node_modules/
+
+# Python venvs (used for occasional tooling)
+.venv/
+venv/
+__pycache__/
+*.pyc

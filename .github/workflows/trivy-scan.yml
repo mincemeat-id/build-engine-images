@@ -1,0 +1,29 @@
+name: trivy-scan
+
+on:
+  pull_request:
+    paths:
+      - "node/**"
+      - "bun/**"
+      - "hugo/**"
+      - ".github/workflows/trivy-scan.yml"
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"   # Weekly rebuild/rescan (Mon 06:00 UTC).
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    name: Trivy scan (Stage 5 enforcement)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stage 0 placeholder
+        run: |
+          echo "Stage 0 scaffold: Trivy scan will be wired in Stage 5."
+          echo "CVE budget will be enforced here (see design doc 'Security And Supply Chain')."

@@ -28,11 +28,11 @@ concurrency:
 jobs:
   matrix:
     name: Resolve image matrix
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       images: ${{ steps.set.outputs.images }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - id: set
         # Stage 2/7: hard-coded matrix of v1 GA and promoted candidate images. A later stage may add
         # changed-path detection; for now we build all supported images on every run so
@@ -50,20 +50,20 @@ jobs:
   build:
     name: build ${{ matrix.image.name }}:${{ matrix.image.tag }}
     needs: matrix
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         image: ${{ fromJson(needs.matrix.outputs.images) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Calculate Image Tags
         id: tags
         run: |
           VERSION=$(jq -r '.version' manifest.json)
           RUN_TRACK="${{ matrix.image.tag }}"
-          
+
           if [ "$RUN_TRACK" = "latest" ]; then
             RELEASE_TAG="${VERSION}"
             PR_TAG="pr-${{ github.event.number || github.event.pull_request.number }}"
@@ -75,7 +75,7 @@ jobs:
             RC_TAG="${RUN_TRACK}-${VERSION}-rc.${{ github.run_number }}"
             NIGHTLY_TAG="${RUN_TRACK}-nightly-$(date +%Y%m%d)"
           fi
-          
+
           if [ "${{ github.event_name }}" = "release" ]; then
             ACTIVE_TAG="$RELEASE_TAG"
           elif [ "${{ github.event_name }}" = "push" ]; then
@@ -83,13 +83,13 @@ jobs:
           else
             ACTIVE_TAG="$PR_TAG"
           fi
-          
+
           echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
           echo "active_tag=$ACTIVE_TAG" >> "$GITHUB_OUTPUT"
           echo "rc_tag=$RC_TAG" >> "$GITHUB_OUTPUT"
           echo "pr_tag=$PR_TAG" >> "$GITHUB_OUTPUT"
           echo "nightly_tag=$NIGHTLY_TAG" >> "$GITHUB_OUTPUT"
-          
+
           echo "Calculated tags:"
           echo "  Release tag: $RELEASE_TAG"
           echo "  Active tag: $ACTIVE_TAG"
@@ -98,11 +98,11 @@ jobs:
           echo "  Nightly tag: $NIGHTLY_TAG"
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Build image (load locally for size + smoke)
         id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: ${{ matrix.image.dockerfile }}
@@ -129,7 +129,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload size record
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: image-size-${{ matrix.image.name }}-${{ matrix.image.tag }}
           path: |
@@ -172,6 +172,13 @@ jobs:
         run: |
           python scripts/enforce_cve_budget.py --report trivy-results.json --exceptions security-exceptions.json
 
+      - name: Audit security exceptions ledger
+        # Stage 0 Quick Win: warn when security-exceptions.json contains only
+        # example or expired entries so a stale ledger never silently
+        # suppresses real CVEs.
+        run: |
+          python scripts/check_security_exceptions.py --file security-exceptions.json --mode warn
+
       - name: Generate CycloneDX SBOM
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -180,7 +187,7 @@ jobs:
           output: 'sbom.json'
 
       - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: sbom-${{ matrix.image.name }}-${{ matrix.image.tag }}
           path: sbom.json
@@ -188,7 +195,7 @@ jobs:
 
       - name: Log in to GHCR
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -213,7 +220,7 @@ jobs:
           REMOTE_TAG="ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}:${{ steps.tags.outputs.active_tag }}"
           docker tag "$LOCAL_TAG" "$REMOTE_TAG"
           docker push "$REMOTE_TAG"
-          
+
           # Extract digest (strip sha256: prefix if present)
           DIGEST=$(docker image inspect "$REMOTE_TAG" --format '{{range .RepoDigests}}{{.}}{{end}}' | cut -d'@' -f2 | cut -d':' -f2)
           if [ -z "$DIGEST" ]; then
@@ -223,7 +230,7 @@ jobs:
 
       - name: Install Cosign
         if: github.event_name != 'pull_request'
-        uses: sigstore/cosign-installer@v3.5.0
+        uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 # v3.5.0
 
       - name: Sign published image
         if: github.event_name != 'pull_request'
@@ -231,7 +238,7 @@ jobs:
           cosign sign --yes "ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}@sha256:${{ steps.push.outputs.digest }}"
 
       - name: Generate SLSA provenance attestation (Push)
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@ef244123eb79f2f7a7e75d99086184180e6d0018 # v1
         if: github.event_name != 'pull_request'
         with:
           subject-name: ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}
@@ -239,7 +246,7 @@ jobs:
           push-to-registry: true
 
       - name: Attest build provenance for Dockerfile (PR)
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@ef244123eb79f2f7a7e75d99086184180e6d0018 # v1
         if: github.event_name == 'pull_request'
         with:
           subject-path: ${{ matrix.image.dockerfile }}
@@ -255,7 +262,7 @@ jobs:
 
       - name: Upload digest info
         if: github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: digest-info-${{ matrix.image.name }}-${{ matrix.image.tag }}
           path: image-outputs/
@@ -265,16 +272,16 @@ jobs:
     name: Update and Publish Manifest
     needs: build
     if: github.event_name == 'release' || github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
@@ -282,7 +289,7 @@ jobs:
         run: pip install --quiet "jsonschema==4.*"
 
       - name: Download all digest artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           pattern: digest-info-*
           path: digest-artifacts
@@ -318,9 +325,17 @@ jobs:
 
           python scripts/generate_manifest.py "${ARGS[@]}"
 
+      - name: Reject placeholder version on release
+        # Stage 0 Quick Win: even though the schema already rejects "0.0.0",
+        # this is a release-only belt-and-braces check that also catches
+        # placeholder image tags (e.g. "...:20-0.0.0").
+        if: github.event_name == 'release'
+        run: |
+          python scripts/check_manifest_release.py --manifest manifest.json
+
       - name: Upload Candidate Manifest
         if: github.event_name == 'push'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: candidate-manifest
           path: manifest.json
@@ -338,7 +353,7 @@ jobs:
     name: Aggregate image size report
     needs: build
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Note
         run: |

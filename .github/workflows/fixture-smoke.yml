@@ -20,9 +20,9 @@ permissions:
 jobs:
   entrypoint-tests:
     name: Entrypoint contract tests (Stage 1)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Install jq
         run: |
           if ! command -v jq >/dev/null 2>&1; then
@@ -34,9 +34,9 @@ jobs:
 
   smoke:
     name: Fixture smoke (Stage 3 enforcement)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Run cold build smoke tests
         run: bash tests/smoke/run-cold.sh
       - name: Run warm-cache build smoke tests

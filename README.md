@@ -44,6 +44,7 @@ Report vulnerabilities privately via [SECURITY.md](./SECURITY.md).
 ## Documentation
 
 - [docs/design.md](./docs/design.md) — full design, goals, contracts.
+- [docs/verification.md](./docs/verification.md) — cosign + SLSA verification recipes.
 - [docs/ghcr-naming.md](./docs/ghcr-naming.md) — GHCR package and tag conventions.
 - [docs/rollback.md](./docs/rollback.md) — rollback procedure.
 - [docs/security-exceptions.md](./docs/security-exceptions.md) — CVE exception process.

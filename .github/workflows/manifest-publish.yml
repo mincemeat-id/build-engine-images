@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
   packages: read
 
@@ -42,43 +42,131 @@ jobs:
           python scripts/check_manifest_release.py --manifest manifest.json
 
   publish:
-    name: Publish manifest artifact (Stage 6 enforcement)
+    name: Open manifest bump PR in build-engine
     needs: validate
     runs-on: ubuntu-24.04
-    if: github.event_name == 'release' || github.event_name == 'push'
+    # Stage 1: single-writer policy — only the release event opens the
+    # cross-repo PR. Previously `push` to master also triggered a PR which,
+    # combined with the build-and-publish commit-back step, could double-fire
+    # bumps on a single release. The build-and-publish workflow no longer
+    # commits to master, and this job no longer fires on push.
+    if: github.event_name == 'release'
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - name: Open manifest bump PR in build-engine
+
+      - name: Mint GitHub App installation token for build-engine
+        # Stage 1: the previous flow tried GITHUB_TOKEN, which has no
+        # cross-repo write. The App approach scopes write access to a
+        # single target repository and is auditable in the App's
+        # installation log. Required org secrets:
+        #   MANIFEST_BUMP_APP_ID
+        #   MANIFEST_BUMP_APP_PRIVATE_KEY
+        # The App must be installed on mincemeat-id/build-engine with
+        # Contents: write and Pull requests: write.
+        id: app-token
+        uses: actions/create-github-app-token@af35edadc00be37caa72ed9f3e6d5f7801bfdf09 # v1
+        with:
+          app-id: ${{ secrets.MANIFEST_BUMP_APP_ID }}
+          private-key: ${{ secrets.MANIFEST_BUMP_APP_PRIVATE_KEY }}
+          owner: mincemeat-id
+          repositories: build-engine
+
+      - name: Download released manifest assets
+        # Stage 1: pull the signed manifest + signature + cert that
+        # build-and-publish.yml attached to the GitHub Release so the
+        # cross-repo PR links to verifiable artifacts.
         env:
-          GITHUB_TOKEN: ${{ secrets.MANIFEST_BUMP_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Action"
+          set -euo pipefail
+          mkdir -p release-assets
+          gh release download "$RELEASE_TAG" \
+            --pattern 'manifest.json' \
+            --pattern 'manifest.json.sig' \
+            --pattern 'manifest.json.pem' \
+            --pattern 'manifest.json.sha256' \
+            --dir release-assets
+
+      - name: Open manifest bump PR in build-engine
+        # Stage 1: hard-fail on any error (clone / push / PR open). The
+        # previous flow silently swallowed clone failure ("Warning") and
+        # exited 0, which let a release look successful while the engine
+        # never bumped.
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          IMAGES_REPO: ${{ github.repository }}
+          IMAGES_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          git config --global user.email "manifest-bump-app[bot]@users.noreply.github.com"
+          git config --global user.name  "manifest-bump-app[bot]"
 
           echo "Cloning mincemeat-id/build-engine..."
-          if gh repo clone mincemeat-id/build-engine build-engine -- --depth=1; then
-            cp manifest.json build-engine/manifest.json
-            cd build-engine
+          gh repo clone mincemeat-id/build-engine build-engine -- --depth=1
 
-            if git diff --quiet manifest.json; then
-              echo "No differences in manifest.json. Skipping PR creation."
-              exit 0
-            fi
+          cp release-assets/manifest.json build-engine/manifest.json
+          cd build-engine
 
-            BRANCH="bump-manifest-${{ github.sha }}"
-            git checkout -b "$BRANCH"
-            git add manifest.json
-            git commit -m "chore: bump build-engine-images manifest to $(jq -r '.version' manifest.json)"
-
-            echo "Pushing branch $BRANCH..."
-            git push origin "$BRANCH"
-
-            echo "Creating pull request..."
-            gh pr create \
-              --title "chore: bump build-engine-images manifest to $(jq -r '.version' manifest.json)" \
-              --body "Automated pull request triggered by build-engine-images update." \
-              --base master \
-              --head "$BRANCH"
-          else
-            echo "Warning: Could not clone mincemeat-id/build-engine. This is expected if the repository does not exist or if permissions are restricted."
+          if git diff --quiet manifest.json; then
+            echo "No differences in manifest.json. Skipping PR creation."
+            exit 0
           fi
+
+          VERSION=$(jq -r '.version' manifest.json)
+          BRANCH="bump-manifest-${VERSION}"
+          git checkout -b "$BRANCH"
+          git add manifest.json
+          git commit -m "chore: bump build-engine-images manifest to ${VERSION}"
+
+          echo "Pushing branch $BRANCH..."
+          git push --force-with-lease origin "$BRANCH"
+
+          RELEASE_URL="https://github.com/${IMAGES_REPO}/releases/tag/${RELEASE_TAG}"
+          MANIFEST_URL="${RELEASE_URL}/manifest.json"
+          MANIFEST_SIG_URL="${RELEASE_URL}/manifest.json.sig"
+          MANIFEST_PEM_URL="${RELEASE_URL}/manifest.json.pem"
+
+          PR_BODY=$(cat <<EOF
+          Automated manifest bump from \`${IMAGES_REPO}\` release \`${RELEASE_TAG}\`.
+
+          - **Manifest version:** \`${VERSION}\`
+          - **Source commit:** \`${IMAGES_SHA}\`
+          - **Release:** ${RELEASE_URL}
+
+          ### Signed artifacts
+
+          - Manifest: ${MANIFEST_URL}
+          - Cosign signature: ${MANIFEST_SIG_URL}
+          - Cosign certificate: ${MANIFEST_PEM_URL}
+
+          ### Verification
+
+          \`\`\`shell
+          gh release download "${RELEASE_TAG}" --repo "${IMAGES_REPO}" \\
+            --pattern 'manifest.json*'
+          cosign verify-blob \\
+            --certificate manifest.json.pem \\
+            --signature  manifest.json.sig \\
+            --certificate-identity-regexp "^https://github.com/${IMAGES_REPO}/" \\
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \\
+            manifest.json
+          \`\`\`
+
+          Image cosign signatures and SLSA build-provenance attestations are
+          attached at the registry — see \`docs/verification.md\` in
+          \`${IMAGES_REPO}\` for end-to-end recipes.
+          EOF
+          )
+
+          echo "Creating pull request..."
+          gh pr create \
+            --title "chore: bump build-engine-images manifest to ${VERSION}" \
+            --body  "$PR_BODY" \
+            --base  master \
+            --head  "$BRANCH"

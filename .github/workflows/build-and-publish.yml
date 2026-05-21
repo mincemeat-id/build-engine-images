@@ -114,6 +114,20 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.image.name }}-${{ matrix.image.tag }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}-${{ matrix.image.tag }}
 
+      - name: Capture local image digest (PR attestation subject)
+        id: local-digest
+        run: |
+          set -euo pipefail
+          tag="build-engine-images/${{ matrix.image.name }}:${{ matrix.image.tag }}-ci"
+          # docker image ID is `sha256:<hex>`; strip the prefix for downstream use.
+          IMAGEID=$(docker image inspect "$tag" --format '{{.Id}}')
+          DIGEST=${IMAGEID#sha256:}
+          if [ -z "$DIGEST" ]; then
+            echo "::error::Failed to extract local image digest for $tag" >&2
+            exit 1
+          fi
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+
       - name: Report image size
         id: size
         run: |
@@ -203,32 +217,69 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Enforce Tag Immutability
+      - name: Enforce Tag Immutability (GHCR REST)
+        # Stage 1: replace `docker manifest inspect` (susceptible to stale
+        # negatives) with a direct GHCR REST query using the workflow's
+        # GITHUB_TOKEN. We list package versions for the image and reject
+        # any reuse of the planned active tag.
         if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTIVE_TAG: ${{ steps.tags.outputs.active_tag }}
+          IMAGE_NAME: ${{ matrix.image.name }}
         run: |
-          TAG_TO_CHECK="ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}:${{ steps.tags.outputs.active_tag }}"
-          echo "Checking if tag $TAG_TO_CHECK already exists in GHCR..."
-          if docker manifest inspect "$TAG_TO_CHECK" >/dev/null 2>&1; then
-            echo "::error::Tag $TAG_TO_CHECK already exists in GHCR. Re-publishing an existing tag is forbidden to ensure immutability."
+          set -euo pipefail
+          PACKAGE_NAME="build-engine-images%2F${IMAGE_NAME}"
+          REST_PATH="/orgs/mincemeat-id/packages/container/${PACKAGE_NAME}/versions"
+          echo "Querying GHCR REST API for $REST_PATH (tag=$ACTIVE_TAG)..."
+
+          # gh exits non-zero on 404 (package not yet published) — treat as "no
+          # versions yet", which is a legitimate first-publish situation.
+          if ! RAW=$(gh api -H "Accept: application/vnd.github+json" \
+                "$REST_PATH" --paginate 2>/tmp/gh-err); then
+            if grep -q "Not Found" /tmp/gh-err; then
+              echo "Package not yet published; tag is necessarily fresh."
+              exit 0
+            fi
+            cat /tmp/gh-err >&2
+            echo "::error::GHCR REST query failed" >&2
             exit 1
           fi
-          echo "Tag does not exist. Proceeding with publication."
 
-      - name: Tag and push image
+          if echo "$RAW" | jq -e --arg t "$ACTIVE_TAG" \
+              'any(.[]?.metadata.container.tags[]?; . == $t)' >/dev/null; then
+            echo "::error::Tag $ACTIVE_TAG already exists in GHCR. Re-publishing an existing tag is forbidden to ensure immutability."
+            exit 1
+          fi
+          echo "Tag $ACTIVE_TAG does not exist. Proceeding with publication."
+
+      - name: Push image to GHCR (buildx-authoritative digest)
+        # Stage 1: push via docker/build-push-action so the registry-side
+        # manifest digest is produced by buildx (steps.push.outputs.digest).
+        # The previous flow used `docker tag`+`docker push` and then fell
+        # back to image .Id when RepoDigests were empty, which could bind
+        # cosign + SLSA to the wrong digest. Cache reuse keeps this fast.
         if: github.event_name != 'pull_request'
         id: push
-        run: |
-          LOCAL_TAG="build-engine-images/${{ matrix.image.name }}:${{ matrix.image.tag }}-ci"
-          REMOTE_TAG="ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}:${{ steps.tags.outputs.active_tag }}"
-          docker tag "$LOCAL_TAG" "$REMOTE_TAG"
-          docker push "$REMOTE_TAG"
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: ${{ matrix.image.dockerfile }}
+          push: true
+          tags: ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}:${{ steps.tags.outputs.active_tag }}
+          cache-from: type=gha,scope=${{ matrix.image.name }}-${{ matrix.image.tag }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}-${{ matrix.image.tag }}
+          provenance: true
+          sbom: false
 
-          # Extract digest (strip sha256: prefix if present)
-          DIGEST=$(docker image inspect "$REMOTE_TAG" --format '{{range .RepoDigests}}{{.}}{{end}}' | cut -d'@' -f2 | cut -d':' -f2)
-          if [ -z "$DIGEST" ]; then
-            DIGEST=$(docker image inspect "$REMOTE_TAG" --format '{{.Id}}' | cut -d':' -f2)
+      - name: Assert buildx digest is present
+        if: github.event_name != 'pull_request'
+        run: |
+          if [ -z "${{ steps.push.outputs.digest }}" ]; then
+            echo "::error::docker/build-push-action did not return an image digest" >&2
+            exit 1
           fi
-          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "Pushed digest: ${{ steps.push.outputs.digest }}"
 
       - name: Install Cosign
         if: github.event_name != 'pull_request'
@@ -237,28 +288,62 @@ jobs:
       - name: Sign published image
         if: github.event_name != 'pull_request'
         run: |
-          cosign sign --yes "ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}@sha256:${{ steps.push.outputs.digest }}"
+          cosign sign --yes "ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}@${{ steps.push.outputs.digest }}"
 
       - name: Generate SLSA provenance attestation (Push)
+        id: attest
         uses: actions/attest-build-provenance@ef244123eb79f2f7a7e75d99086184180e6d0018 # v1
         if: github.event_name != 'pull_request'
         with:
           subject-name: ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}
-          subject-digest: sha256:${{ steps.push.outputs.digest }}
+          subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
 
-      - name: Attest build provenance for Dockerfile (PR)
+      - name: Verify cosign signature (post-publish)
+        # Stage 1 post-condition: a publish without a verifiable signature
+        # is treated as a failed publish. Keeps the trust chain honest.
+        if: github.event_name != 'pull_request'
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          set -euo pipefail
+          IMG="ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}@${{ steps.push.outputs.digest }}"
+          cosign verify "$IMG" \
+            --certificate-identity-regexp "^https://github.com/${{ github.repository }}/" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+
+      - name: Verify SLSA build-provenance attestation (post-publish)
+        if: github.event_name != 'pull_request'
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          set -euo pipefail
+          IMG="ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}@${{ steps.push.outputs.digest }}"
+          cosign verify-attestation "$IMG" \
+            --type slsaprovenance1 \
+            --certificate-identity-regexp "^https://github.com/" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" >/dev/null
+
+      - name: Attest build provenance for PR image (local digest)
+        # Stage 1: PR attestations target the locally built image digest
+        # (not the Dockerfile path), keeping subject semantics identical
+        # to release attestations. The attestation is uploaded as a CI
+        # artifact only and is NOT pushed to any registry.
         uses: actions/attest-build-provenance@ef244123eb79f2f7a7e75d99086184180e6d0018 # v1
         if: github.event_name == 'pull_request'
         with:
-          subject-path: ${{ matrix.image.dockerfile }}
+          subject-name: build-engine-images/${{ matrix.image.name }}
+          subject-digest: sha256:${{ steps.local-digest.outputs.digest }}
+          push-to-registry: false
 
       - name: Save image digest and tag
         if: github.event_name != 'pull_request'
         run: |
           mkdir -p image-outputs
           echo "tag=ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}:${{ steps.tags.outputs.active_tag }}" > image-outputs/data.txt
-          echo "digest=sha256:${{ steps.push.outputs.digest }}" >> image-outputs/data.txt
+          # steps.push.outputs.digest from docker/build-push-action already
+          # includes the "sha256:" prefix.
+          echo "digest=${{ steps.push.outputs.digest }}" >> image-outputs/data.txt
           SAFE_NAME=$(echo "${{ matrix.image.name }}_${{ matrix.image.tag }}" | tr ':' '_')
           mv image-outputs/data.txt "image-outputs/${SAFE_NAME}.txt"
 
@@ -271,17 +356,23 @@ jobs:
           retention-days: 1
 
   manifest-update:
-    name: Update and Publish Manifest
+    name: Update, Sign and Publish Manifest
     needs: build
     if: github.event_name == 'release' || github.event_name == 'push'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
+          # Stage 1: read-only checkout. The previous flow committed the
+          # regenerated manifest back to master from inside this job, which
+          # created a re-entry race with manifest-publish.yml's push trigger.
+          # The release-tag image digests are the single source of truth and
+          # are attached to the GitHub Release artifact instead.
+          fetch-depth: 1
 
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
@@ -342,14 +433,45 @@ jobs:
           name: candidate-manifest
           path: manifest.json
 
-      - name: Commit and Push Manifest (Release only)
+      - name: Install Cosign
         if: github.event_name == 'release'
+        uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 # v3.5.0
+
+      - name: Sign manifest.json (cosign keyless blob signature)
+        # Stage 1: produce a verifiable signature over the released
+        # manifest.json itself so consumers can prove the image digests
+        # they pull originated from this workflow. The .sig + .pem are
+        # attached to the GitHub Release alongside the manifest.
+        if: github.event_name == 'release'
+        env:
+          COSIGN_EXPERIMENTAL: "1"
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add manifest.json
-          git commit -m "chore: release manifest.json version ${{ steps.generate.outputs.release_version }} [skip ci]" || echo "No changes to commit"
-          git push origin HEAD:master
+          set -euo pipefail
+          cosign sign-blob --yes \
+            --output-signature manifest.json.sig \
+            --output-certificate manifest.json.pem \
+            manifest.json
+          sha256sum manifest.json manifest.json.sig manifest.json.pem > manifest.json.sha256
+
+      - name: Attest manifest.json provenance
+        if: github.event_name == 'release'
+        uses: actions/attest-build-provenance@ef244123eb79f2f7a7e75d99086184180e6d0018 # v1
+        with:
+          subject-path: manifest.json
+
+      - name: Attach manifest.json + signature to GitHub Release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          gh release upload "$RELEASE_TAG" \
+            manifest.json \
+            manifest.json.sig \
+            manifest.json.pem \
+            manifest.json.sha256 \
+            --clobber
 
   size-report:
     name: Aggregate image size report

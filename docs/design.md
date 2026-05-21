@@ -196,10 +196,36 @@ Publication requirements:
 
 - Trivy scan on every PR and release build.
 - SBOM generated in CycloneDX format.
-- Cosign keyless signature.
-- SLSA provenance attached.
-- Immutable release tags.
+- Cosign keyless signature on every published image **and** on the released
+  `manifest.json` (cosign blob signature attached to the GitHub Release).
+- SLSA provenance attached to every published image and to the released
+  manifest.
+- Post-publish verification: every publish job re-runs `cosign verify` and
+  `cosign verify-attestation` against the just-pushed digest. A publish whose
+  signature or provenance does not verify is treated as a failed publish.
+- Immutable release tags (enforced via the GHCR REST API).
 - Weekly rebuild scan.
+
+### SLSA Level Claim
+
+The build pipeline targets **SLSA Build Level 3** ("hosted, hardened, signed
+provenance") by:
+
+- Building on GitHub-hosted ephemeral runners (`ubuntu-24.04`), pinned via
+  immutable runner images.
+- Generating non-falsifiable provenance with
+  [`actions/attest-build-provenance`](https://github.com/actions/attest-build-provenance),
+  which uses the workflow's `id-token` to issue a Sigstore Fulcio certificate
+  whose subject identifies this repository + workflow path.
+- Pushing the in-toto SLSA provenance predicate to the registry beside the
+  image manifest (`push-to-registry: true`).
+- Producing a registry-side image digest from `docker/build-push-action`'s
+  `outputs.digest` (single source of truth) so the cosign signature, the
+  SLSA attestation, the `manifest.json` digest entry, and the engine's
+  `pull-by-digest` are all bound to the same `sha256:...`.
+
+Verification recipes for downstream consumers live in
+[verification.md](./verification.md).
 
 CVE budget:
 

@@ -1,6 +1,7 @@
 # Build Engine Images Design
 
 > **Repository:** `mincemeat-id/build-engine-images`
+> **Status:** Design and decision documentation.
 > **Audience:** Platform maintainers, build-engine maintainers, security
 > reviewers.
 

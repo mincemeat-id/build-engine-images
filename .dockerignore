@@ -1,0 +1,31 @@
+# Minimize the Docker build context.
+# Only the shared entrypoint is required by every image build; everything
+# else is repo metadata (docs, CI, fixtures, schemas) that would needlessly
+# inflate the build context and slow down rebuilds.
+*
+
+# Allow only what the Dockerfiles actually COPY into images.
+!entrypoint/
+!entrypoint/**
+
+# Explicitly exclude common heavy paths even if a future rule re-includes them.
+.git
+.github
+.gitignore
+docs
+tests
+scripts
+schemas
+node
+bun
+hugo
+zola
+manifest.json
+schemas
+security-exceptions.json
+analysis_report.md
+README.md
+SECURITY.md
+LICENSE
+AGENTS.md
+*.md

@@ -1,6 +1,6 @@
 {
   "$schema": "./schemas/manifest.schema.json",
-  "version": "0.0.0",
+  "version": "0.1.0-dev",
   "generated_at": "2026-05-20T05:39:15.738038Z",
   "images": {
     "node:20": {

@@ -1,0 +1,30 @@
+# Enforce platform-maintainer review on the
+# security-critical surfaces of this repository.
+#
+# Every file matches the last applicable pattern, so order matters.
+# See docs/security-exceptions.md for the policy this file enforces.
+
+# Default fallback — every change requires a platform maintainer reviewer.
+*                       @mincemeat-id/platform-maintainers
+
+# Dockerfiles (any image, any track).
+*.Dockerfile            @mincemeat-id/platform-maintainers
+node/                   @mincemeat-id/platform-maintainers
+bun/                    @mincemeat-id/platform-maintainers
+hugo/                   @mincemeat-id/platform-maintainers
+zola/                   @mincemeat-id/platform-maintainers
+
+# Shared entrypoint contract.
+entrypoint/             @mincemeat-id/platform-maintainers
+
+# Engine ↔ images contract.
+manifest.json           @mincemeat-id/platform-maintainers
+schemas/                @mincemeat-id/platform-maintainers
+
+# CI/CD workflows and helper scripts that mint signatures/attestations.
+.github/                @mincemeat-id/platform-maintainers
+scripts/                @mincemeat-id/platform-maintainers
+
+# Security policy + exception ledger.
+SECURITY.md             @mincemeat-id/platform-maintainers @mincemeat-id/security
+security-exceptions.json @mincemeat-id/platform-maintainers @mincemeat-id/security

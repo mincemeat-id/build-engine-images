@@ -13,8 +13,9 @@
     },
     "version": {
       "type": "string",
-      "description": "Immutable semver of this manifest release.",
-      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+      "description": "Immutable semver of this manifest release. The placeholder '0.0.0' is rejected so a release can never accidentally ship a pre-bump manifest.",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$",
+      "not": { "const": "0.0.0" }
     },
     "generated_at": {
       "type": "string",

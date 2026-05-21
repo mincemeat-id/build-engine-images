@@ -84,11 +84,13 @@ jobs:
             ACTIVE_TAG="$PR_TAG"
           fi
 
-          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
-          echo "active_tag=$ACTIVE_TAG" >> "$GITHUB_OUTPUT"
-          echo "rc_tag=$RC_TAG" >> "$GITHUB_OUTPUT"
-          echo "pr_tag=$PR_TAG" >> "$GITHUB_OUTPUT"
-          echo "nightly_tag=$NIGHTLY_TAG" >> "$GITHUB_OUTPUT"
+          {
+            echo "release_tag=$RELEASE_TAG"
+            echo "active_tag=$ACTIVE_TAG"
+            echo "rc_tag=$RC_TAG"
+            echo "pr_tag=$PR_TAG"
+            echo "nightly_tag=$NIGHTLY_TAG"
+          } >> "$GITHUB_OUTPUT"
 
           echo "Calculated tags:"
           echo "  Release tag: $RELEASE_TAG"
@@ -298,7 +300,7 @@ jobs:
         id: generate
         run: |
           ARGS=()
-          for f in $(find digest-artifacts -name "*.txt"); do
+          while IFS= read -r -d '' f; do
             filename=$(basename "$f" .txt)
             case "$filename" in
               node_20) logical_name="node:20" ;;
@@ -314,7 +316,7 @@ jobs:
             tag=$(grep "^tag=" "$f" | cut -d'=' -f2)
             digest=$(grep "^digest=" "$f" | cut -d'=' -f2)
             ARGS+=("--image-tag" "${logical_name}=${tag}" "--image-digest" "${logical_name}=${digest}")
-          done
+          done < <(find digest-artifacts -name "*.txt" -print0)
 
           if [ "${{ github.event_name }}" = "release" ]; then
             VERSION_VAL="${{ github.event.release.tag_name }}"

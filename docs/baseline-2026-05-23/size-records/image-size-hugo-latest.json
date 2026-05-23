@@ -1,0 +1,11 @@
+{
+  "image": "hugo:latest",
+  "tag": "build-engine-images/hugo:latest-ci",
+  "bytes": 258731558,
+  "mib": 246.7,
+  "dockerfile": "hugo/latest.Dockerfile",
+  "git_sha": "825fef93e91e4154f47fe105f145b54a890b8165",
+  "manifest_version": "0.1.0-dev",
+  "image_id": "sha256:fe4ce4afa8105c60c2dcf016adb9048551c65770e1ced28ab545fa6f3863b858",
+  "repo_digests": []
+}

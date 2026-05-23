@@ -1,0 +1,100 @@
+{
+  "generated_at": "2026-05-23",
+  "reports": [
+    {
+      "image": "bun:1",
+      "report": "docs/baseline-2026-05-23/trivy/bun-1.json",
+      "total": 983,
+      "by_severity": {
+        "CRITICAL": 4,
+        "HIGH": 47,
+        "MEDIUM": 295,
+        "LOW": 633,
+        "UNKNOWN": 4
+      },
+      "with_fix": {
+        "CRITICAL": 0,
+        "HIGH": 0,
+        "MEDIUM": 0,
+        "LOW": 0,
+        "UNKNOWN": 0
+      }
+    },
+    {
+      "image": "hugo latest",
+      "report": "docs/baseline-2026-05-23/trivy/hugo-latest.json",
+      "total": 253,
+      "by_severity": {
+        "CRITICAL": 1,
+        "HIGH": 22,
+        "MEDIUM": 90,
+        "LOW": 136,
+        "UNKNOWN": 4
+      },
+      "with_fix": {
+        "CRITICAL": 0,
+        "HIGH": 0,
+        "MEDIUM": 0,
+        "LOW": 0,
+        "UNKNOWN": 0
+      }
+    },
+    {
+      "image": "node:20",
+      "report": "docs/baseline-2026-05-23/trivy/node-20.json",
+      "total": 1685,
+      "by_severity": {
+        "CRITICAL": 6,
+        "HIGH": 153,
+        "MEDIUM": 814,
+        "LOW": 704,
+        "UNKNOWN": 8
+      },
+      "with_fix": {
+        "CRITICAL": 0,
+        "HIGH": 0,
+        "MEDIUM": 0,
+        "LOW": 0,
+        "UNKNOWN": 0
+      }
+    },
+    {
+      "image": "node:22",
+      "report": "docs/baseline-2026-05-23/trivy/node-22.json",
+      "total": 1685,
+      "by_severity": {
+        "CRITICAL": 6,
+        "HIGH": 153,
+        "MEDIUM": 814,
+        "LOW": 704,
+        "UNKNOWN": 8
+      },
+      "with_fix": {
+        "CRITICAL": 0,
+        "HIGH": 0,
+        "MEDIUM": 0,
+        "LOW": 0,
+        "UNKNOWN": 0
+      }
+    },
+    {
+      "image": "zola latest",
+      "report": "docs/baseline-2026-05-23/trivy/zola-latest.json",
+      "total": 253,
+      "by_severity": {
+        "CRITICAL": 1,
+        "HIGH": 22,
+        "MEDIUM": 90,
+        "LOW": 136,
+        "UNKNOWN": 4
+      },
+      "with_fix": {
+        "CRITICAL": 0,
+        "HIGH": 0,
+        "MEDIUM": 0,
+        "LOW": 0,
+        "UNKNOWN": 0
+      }
+    }
+  ]
+}

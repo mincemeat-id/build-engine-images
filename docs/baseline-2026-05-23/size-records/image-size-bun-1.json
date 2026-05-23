@@ -1,0 +1,11 @@
+{
+  "image": "bun:1",
+  "tag": "build-engine-images/bun:1-ci",
+  "bytes": 683133191,
+  "mib": 651.5,
+  "dockerfile": "bun/1.Dockerfile",
+  "git_sha": "825fef93e91e4154f47fe105f145b54a890b8165",
+  "manifest_version": "0.1.0-dev",
+  "image_id": "sha256:5d3e18613805bc98d69947868d3d07fd19925599a19bf8075769e473d65cc9c4",
+  "repo_digests": []
+}

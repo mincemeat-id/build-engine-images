@@ -1,0 +1,60 @@
+{
+  "generated_at": "2026-05-23",
+  "records": [
+    {
+      "image": "bun:1",
+      "tag": "build-engine-images/bun:1-ci",
+      "bytes": 683133191,
+      "mib": 651.5,
+      "dockerfile": "bun/1.Dockerfile",
+      "git_sha": "825fef93e91e4154f47fe105f145b54a890b8165",
+      "manifest_version": "0.1.0-dev",
+      "image_id": "sha256:5d3e18613805bc98d69947868d3d07fd19925599a19bf8075769e473d65cc9c4",
+      "repo_digests": []
+    },
+    {
+      "image": "hugo:latest",
+      "tag": "build-engine-images/hugo:latest-ci",
+      "bytes": 258731558,
+      "mib": 246.7,
+      "dockerfile": "hugo/latest.Dockerfile",
+      "git_sha": "825fef93e91e4154f47fe105f145b54a890b8165",
+      "manifest_version": "0.1.0-dev",
+      "image_id": "sha256:fe4ce4afa8105c60c2dcf016adb9048551c65770e1ced28ab545fa6f3863b858",
+      "repo_digests": []
+    },
+    {
+      "image": "node:20",
+      "tag": "build-engine-images/node:20-ci",
+      "bytes": 634946313,
+      "mib": 605.5,
+      "dockerfile": "node/20.Dockerfile",
+      "git_sha": "825fef93e91e4154f47fe105f145b54a890b8165",
+      "manifest_version": "0.1.0-dev",
+      "image_id": "sha256:15c478d42cd552e2ca5231f4e07b93b2ce38dd8fdd5d65a8e63155660a091750",
+      "repo_digests": []
+    },
+    {
+      "image": "node:22",
+      "tag": "build-engine-images/node:22-ci",
+      "bytes": 643153897,
+      "mib": 613.4,
+      "dockerfile": "node/22.Dockerfile",
+      "git_sha": "825fef93e91e4154f47fe105f145b54a890b8165",
+      "manifest_version": "0.1.0-dev",
+      "image_id": "sha256:99c0c9f9d5234371c9adee95fb422a3374b40422b0e92a10d2c38851cc7e1d6d",
+      "repo_digests": []
+    },
+    {
+      "image": "zola:latest",
+      "tag": "build-engine-images/zola:latest-ci",
+      "bytes": 218531998,
+      "mib": 208.4,
+      "dockerfile": "zola/latest.Dockerfile",
+      "git_sha": "825fef93e91e4154f47fe105f145b54a890b8165",
+      "manifest_version": "0.1.0-dev",
+      "image_id": "sha256:c86c6cd67e41577305b701f1182a859bb9f5d7f63833f34a31d77d1e3c185880",
+      "repo_digests": []
+    }
+  ]
+}

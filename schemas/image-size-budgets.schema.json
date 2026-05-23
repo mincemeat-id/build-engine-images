@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mincemeat-id/build-engine-images/schemas/image-size-budgets.schema.json",
+  "title": "Mincemeat build-engine image size budgets",
+  "type": "object",
+  "required": ["unit", "max_growth_percent", "baseline_date", "update_process", "images"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "unit": {
+      "const": "MiB"
+    },
+    "max_growth_percent": {
+      "type": "number",
+      "minimum": 0
+    },
+    "baseline_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "update_process": {
+      "type": "string"
+    },
+    "images": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["max_mib", "baseline_mib", "baseline_ci_mib"],
+        "additionalProperties": false,
+        "properties": {
+          "max_mib": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "baseline_mib": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "baseline_ci_mib": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "max_growth_percent": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

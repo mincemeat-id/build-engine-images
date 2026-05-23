@@ -1,0 +1,11 @@
+{
+  "image": "node:20",
+  "tag": "build-engine-images/node:20-ci",
+  "bytes": 634946313,
+  "mib": 605.5,
+  "dockerfile": "node/20.Dockerfile",
+  "git_sha": "825fef93e91e4154f47fe105f145b54a890b8165",
+  "manifest_version": "0.1.0-dev",
+  "image_id": "sha256:15c478d42cd552e2ca5231f4e07b93b2ce38dd8fdd5d65a8e63155660a091750",
+  "repo_digests": []
+}

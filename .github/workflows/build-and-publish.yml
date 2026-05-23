@@ -8,6 +8,9 @@ on:
       - "hugo/**"
       - "zola/**"
       - "entrypoint/**"
+      - "scripts/**"
+      - "schemas/**"
+      - "image-size-budgets.json"
       - ".github/workflows/build-and-publish.yml"
   push:
     branches: [master]
@@ -39,11 +42,11 @@ jobs:
         # size and smoke reporting stay comprehensive.
         run: |
           echo 'images=[
-            {"name":"node","tag":"20","dockerfile":"node/20.Dockerfile"},
-            {"name":"node","tag":"22","dockerfile":"node/22.Dockerfile"},
-            {"name":"bun","tag":"1","dockerfile":"bun/1.Dockerfile"},
-            {"name":"hugo","tag":"latest","dockerfile":"hugo/latest.Dockerfile"},
-            {"name":"zola","tag":"latest","dockerfile":"zola/latest.Dockerfile"}
+            {"name":"node","tag":"20","dockerfile":"node/20.Dockerfile","expected_codename":"bookworm"},
+            {"name":"node","tag":"22","dockerfile":"node/22.Dockerfile","expected_codename":"bookworm"},
+            {"name":"bun","tag":"1","dockerfile":"bun/1.Dockerfile","expected_codename":"trixie"},
+            {"name":"hugo","tag":"latest","dockerfile":"hugo/latest.Dockerfile","expected_codename":"bookworm"},
+            {"name":"zola","tag":"latest","dockerfile":"zola/latest.Dockerfile","expected_codename":"bookworm"}
           ]' | tr -d '\n' >> "$GITHUB_OUTPUT"
           echo "" >> "$GITHUB_OUTPUT"
 
@@ -128,12 +131,41 @@ jobs:
           fi
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
 
+      - name: Capture image metadata and validate OS codename
+        run: |
+          set -euo pipefail
+          mkdir -p image-metadata
+          tag="build-engine-images/${{ matrix.image.name }}:${{ matrix.image.tag }}-ci"
+          scripts/collect_image_metadata.sh \
+            --image "$tag" \
+            --expected-codename "${{ matrix.image.expected_codename }}" \
+            > "image-metadata/${{ matrix.image.name }}_${{ matrix.image.tag }}.json"
+
+      - name: Upload image metadata
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: image-metadata-${{ matrix.image.name }}-${{ matrix.image.tag }}
+          path: image-metadata/${{ matrix.image.name }}_${{ matrix.image.tag }}.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Report image size
         id: size
         run: |
+          set -euo pipefail
           tag="build-engine-images/${{ matrix.image.name }}:${{ matrix.image.tag }}-ci"
-          bytes=$(docker image inspect "$tag" --format '{{.Size}}')
-          mib=$(awk "BEGIN { printf \"%.1f\", $bytes / 1024 / 1024 }")
+          version=$(jq -r '.version' manifest.json)
+          mkdir -p image-size
+          record="image-size/image-size-${{ matrix.image.name }}-${{ matrix.image.tag }}.json"
+          scripts/write_image_size_record.sh \
+            --image "$tag" \
+            --logical "${{ matrix.image.name }}:${{ matrix.image.tag }}" \
+            --dockerfile "${{ matrix.image.dockerfile }}" \
+            --manifest-version "$version" \
+            --output "$record"
+          python scripts/check_image_size_budget.py --record "$record" --budgets image-size-budgets.json
+          bytes=$(jq -r '.bytes' "$record")
+          mib=$(jq -r '.mib' "$record")
           echo "bytes=$bytes" >> "$GITHUB_OUTPUT"
           echo "mib=$mib" >> "$GITHUB_OUTPUT"
           {
@@ -148,8 +180,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: image-size-${{ matrix.image.name }}-${{ matrix.image.tag }}
-          path: |
-            ${{ matrix.image.dockerfile }}
+          path: image-size/image-size-${{ matrix.image.name }}-${{ matrix.image.tag }}.json
           if-no-files-found: error
           retention-days: 7
 
@@ -482,4 +513,4 @@ jobs:
       - name: Note
         run: |
           echo "Per-image size summaries are appended to each build job's summary."
-          echo "Stage 4 will record digests + sizes into manifest.json on release."
+          echo "Structured image-size-<name>-<track>.json artifacts are uploaded for release review."

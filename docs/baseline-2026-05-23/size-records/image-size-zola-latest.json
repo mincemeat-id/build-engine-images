@@ -1,0 +1,11 @@
+{
+  "image": "zola:latest",
+  "tag": "build-engine-images/zola:latest-ci",
+  "bytes": 218531998,
+  "mib": 208.4,
+  "dockerfile": "zola/latest.Dockerfile",
+  "git_sha": "825fef93e91e4154f47fe105f145b54a890b8165",
+  "manifest_version": "0.1.0-dev",
+  "image_id": "sha256:c86c6cd67e41577305b701f1182a859bb9f5d7f63833f34a31d77d1e3c185880",
+  "repo_digests": []
+}

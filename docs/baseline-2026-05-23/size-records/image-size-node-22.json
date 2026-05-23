@@ -1,0 +1,11 @@
+{
+  "image": "node:22",
+  "tag": "build-engine-images/node:22-ci",
+  "bytes": 643153897,
+  "mib": 613.4,
+  "dockerfile": "node/22.Dockerfile",
+  "git_sha": "825fef93e91e4154f47fe105f145b54a890b8165",
+  "manifest_version": "0.1.0-dev",
+  "image_id": "sha256:99c0c9f9d5234371c9adee95fb422a3374b40422b0e92a10d2c38851cc7e1d6d",
+  "repo_digests": []
+}

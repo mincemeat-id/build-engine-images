@@ -1,0 +1,88 @@
+name: align-build-engine
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Build-engine release tag to align, for example v0.2.0."
+        required: true
+        type: string
+      manifest_url:
+        description: "Immutable build-engine-images manifest URL."
+        required: true
+        default: "https://github.com/mincemeat-id/build-engine-images/releases/download/v1.0.0/manifest.json"
+        type: string
+      expected_manifest_version:
+        description: "Expected build-engine-images manifest version."
+        required: true
+        default: "1.0.0"
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: align-build-engine-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+jobs:
+  align:
+    name: Tag build-engine alignment
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag image packages with build-engine version
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          MANIFEST_URL: ${{ inputs.manifest_url }}
+          EXPECTED_MANIFEST_VERSION: ${{ inputs.expected_manifest_version }}
+        run: |
+          set -euo pipefail
+
+          case "$RELEASE_TAG" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "::error::release_tag must look like vX.Y.Z"; exit 1 ;;
+          esac
+
+          version="${RELEASE_TAG#v}"
+          alignment_tag="build-engine-${version}"
+          curl -fsSL "$MANIFEST_URL" -o build-engine-images-manifest.json
+
+          actual_manifest_version="$(jq -r '.version' build-engine-images-manifest.json)"
+          if [ "$actual_manifest_version" != "$EXPECTED_MANIFEST_VERSION" ]; then
+            echo "::error::build-engine-images manifest version mismatch"
+            echo "expected=$EXPECTED_MANIFEST_VERSION actual=$actual_manifest_version url=$MANIFEST_URL"
+            exit 1
+          fi
+
+          jq -r '.images[] | [.tag, .digest] | @tsv' build-engine-images-manifest.json |
+          while IFS=$'\t' read -r tag digest; do
+            image="${tag%:*}"
+            target="${image}:${alignment_tag}"
+            existing="$(docker buildx imagetools inspect "$target" \
+              --format '{{.Manifest.Digest}}' 2>/dev/null || true)"
+            if [ "$existing" = "$digest" ]; then
+              echo "$target already points at $digest"
+              continue
+            fi
+            if [ -n "$existing" ]; then
+              echo "::error::$target already exists with digest $existing, expected $digest"
+              exit 1
+            fi
+
+            docker buildx imagetools create -t "$target" "${image}@${digest}"
+            echo "$target -> $digest"
+          done

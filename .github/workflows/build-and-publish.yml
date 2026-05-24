@@ -180,14 +180,13 @@ jobs:
         run: |
           set -euo pipefail
           tag="build-engine-images/${{ matrix.image.name }}:${{ matrix.image.tag }}-ci"
-          version=$(jq -r '.version' manifest.json)
           mkdir -p image-size
           record="image-size/image-size-${{ matrix.image.name }}-${{ matrix.image.tag }}.json"
           scripts/write_image_size_record.sh \
             --image "$tag" \
             --logical "${{ matrix.image.name }}:${{ matrix.image.tag }}" \
             --dockerfile "${{ matrix.image.dockerfile }}" \
-            --manifest-version "$version" \
+            --manifest-version "${{ steps.tags.outputs.manifest_version }}" \
             --output "$record"
           python scripts/check_image_size_budget.py --record "$record" --budgets image-size-budgets.json
           bytes=$(jq -r '.bytes' "$record")
@@ -547,7 +546,7 @@ jobs:
         # Stage 0 Quick Win: even though the schema already rejects "0.0.0",
         # this is a release-only belt-and-braces check that also catches
         # placeholder image tags (e.g. "...:20-0.0.0").
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
         run: |
           python scripts/check_manifest_release.py --manifest manifest.json
 

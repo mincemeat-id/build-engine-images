@@ -5,21 +5,26 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: scripts/collect_image_metadata.sh --image IMAGE [--expected-codename CODENAME]
+Usage: scripts/collect_image_metadata.sh --image IMAGE [--expected-id ID] [--expected-codename CODENAME]
 
 Emits JSON with the image digest/ID, size, /etc/os-release, tool versions, and
-the dpkg package list. If --expected-codename is supplied, the script exits
-non-zero when VERSION_CODENAME/DEBIAN_CODENAME does not match.
+the dpkg package list. If --expected-id or --expected-codename is supplied,
+the script exits non-zero when /etc/os-release does not match.
 EOF
 }
 
 image=""
+expected_id=""
 expected_codename=""
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
         --image)
             image="${2:-}"
+            shift 2
+            ;;
+        --expected-id)
+            expected_id="${2:-}"
             shift 2
             ;;
         --expected-codename)
@@ -60,6 +65,16 @@ run_in_image() {
 docker run --rm --entrypoint /bin/sh "$image" -c 'cat /etc/os-release' > "$tmp_dir/os-release"
 run_in_image "dpkg-query -W -f='\${binary:Package}\t\${Version}\n' | sort" > "$tmp_dir/packages"
 
+os_id="$(
+    awk -F= '
+        $1 == "ID" {
+            gsub(/"/, "", $2)
+            print $2
+            exit
+        }
+    ' "$tmp_dir/os-release"
+)"
+
 os_codename="$(
     awk -F= '
         $1 == "VERSION_CODENAME" || $1 == "DEBIAN_CODENAME" {
@@ -69,6 +84,11 @@ os_codename="$(
         }
     ' "$tmp_dir/os-release"
 )"
+
+if [ -n "$expected_id" ] && [ "$os_id" != "$expected_id" ]; then
+    echo "Expected OS ID '$expected_id' for $image, got '${os_id:-<unknown>}'" >&2
+    exit 1
+fi
 
 if [ -n "$expected_codename" ] && [ "$os_codename" != "$expected_codename" ]; then
     echo "Expected OS codename '$expected_codename' for $image, got '${os_codename:-<unknown>}'" >&2
@@ -96,6 +116,7 @@ jq -n \
     --argjson repo_digests "$repo_digests" \
     --argjson bytes "$bytes" \
     --arg mib "$mib" \
+    --arg os_id "$os_id" \
     --arg os_codename "$os_codename" \
     --rawfile os_release "$tmp_dir/os-release" \
     --rawfile package_text "$tmp_dir/packages" \
@@ -117,6 +138,7 @@ jq -n \
             mib: ($mib | tonumber)
         },
         os: {
+            id: $os_id,
             codename: $os_codename,
             release: $os_release
         },

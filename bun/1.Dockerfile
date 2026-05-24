@@ -7,10 +7,19 @@
 #   docker buildx imagetools inspect oven/bun:1-debian --format '{{.Manifest.Digest}}'
 FROM oven/bun:1-debian@sha256:9dba1a1b43ce28c9d7931bfc4eb00feb63b0114720a0277a8f939ae4dfc9db6f
 
+ARG VERSION=0.1.0-dev
+ARG GIT_REVISION=unknown
+ARG BUILD_DATE=unknown
+ARG MANIFEST_VERSION=0.1.0-dev
+
 LABEL org.opencontainers.image.source="https://github.com/mincemeat-id/build-engine-images" \
+      org.opencontainers.image.revision="${GIT_REVISION}" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.title="bun:1" \
       org.opencontainers.image.description="Mincemeat build-engine image: Bun 1.x on Debian for Astro, Vite, and generic static builds." \
       org.opencontainers.image.licenses="MIT" \
+      id.mincemeat.image.manifest.version="${MANIFEST_VERSION}" \
       id.mincemeat.image.runtime.track="1"
 
 ENV DEBIAN_FRONTEND=noninteractive

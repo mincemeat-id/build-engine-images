@@ -2,15 +2,24 @@
 #
 # Mincemeat build-engine image: node:22 (default Node image).
 #
-# Base: official Debian (bookworm-slim) variant of node:22, pinned by digest.
+# Base: official Debian (trixie-slim) variant of node:22, pinned by digest.
 # Refresh the digest with:
-#   docker buildx imagetools inspect node:22-bookworm-slim --format '{{.Manifest.Digest}}'
-FROM node:22-bookworm-slim@sha256:7af03b14a13c8cdd38e45058fd957bf00a72bbe17feac43b1c15a689c029c732
+#   docker buildx imagetools inspect node:22-trixie-slim --format '{{.Manifest.Digest}}'
+FROM node:22-trixie-slim@sha256:e637ac91fb4f2f40761d217c5d48c41a05edf0b65eb9c34e72c27cce55af9e65
+
+ARG VERSION=0.1.0-dev
+ARG GIT_REVISION=unknown
+ARG BUILD_DATE=unknown
+ARG MANIFEST_VERSION=0.1.0-dev
 
 LABEL org.opencontainers.image.source="https://github.com/mincemeat-id/build-engine-images" \
+      org.opencontainers.image.revision="${GIT_REVISION}" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.title="node:22" \
-      org.opencontainers.image.description="Mincemeat build-engine image: Node.js 22 (default) on Debian bookworm-slim with Corepack and native build deps." \
+      org.opencontainers.image.description="Mincemeat build-engine image: Node.js 22 (default) on Debian trixie-slim with Corepack and native build deps." \
       org.opencontainers.image.licenses="MIT" \
+      id.mincemeat.image.manifest.version="${MANIFEST_VERSION}" \
       id.mincemeat.image.runtime.track="22"
 
 ENV DEBIAN_FRONTEND=noninteractive \

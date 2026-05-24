@@ -2,17 +2,25 @@
 #
 # Mincemeat build-engine image: zola:latest
 #
-# Base: debian:bookworm-slim, pinned by digest.
+# Base: debian:trixie-slim, pinned by digest.
 # Refresh the base digest with:
-#   docker buildx imagetools inspect debian:bookworm-slim --format '{{.Manifest.Digest}}'
-FROM debian:bookworm-slim@sha256:0104b334637a5f19aa9c983a91b54c89887c0984081f2068983107a6f6c21eeb
+#   docker buildx imagetools inspect debian:trixie-slim --format '{{.Manifest.Digest}}'
+FROM debian:trixie-slim@sha256:b6e2a152f22a40ff69d92cb397223c906017e1391a73c952b588e51af8883bf8
 
 ARG ZOLA_VERSION=0.22.1
+ARG VERSION=0.1.0-dev
+ARG GIT_REVISION=unknown
+ARG BUILD_DATE=unknown
+ARG MANIFEST_VERSION=0.1.0-dev
 
 LABEL org.opencontainers.image.source="https://github.com/mincemeat-id/build-engine-images" \
+      org.opencontainers.image.revision="${GIT_REVISION}" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.title="zola:latest" \
-      org.opencontainers.image.description="Mincemeat build-engine image: Zola static site generator on Debian bookworm-slim." \
+      org.opencontainers.image.description="Mincemeat build-engine image: Zola static site generator on Debian trixie-slim." \
       org.opencontainers.image.licenses="MIT" \
+      id.mincemeat.image.manifest.version="${MANIFEST_VERSION}" \
       id.mincemeat.image.runtime.track="zola"
 
 ENV DEBIAN_FRONTEND=noninteractive

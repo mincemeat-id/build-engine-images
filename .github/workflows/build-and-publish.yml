@@ -42,11 +42,11 @@ jobs:
         # size and smoke reporting stay comprehensive.
         run: |
           echo 'images=[
-            {"name":"node","tag":"20","dockerfile":"node/20.Dockerfile","expected_codename":"bookworm"},
-            {"name":"node","tag":"22","dockerfile":"node/22.Dockerfile","expected_codename":"bookworm"},
-            {"name":"bun","tag":"1","dockerfile":"bun/1.Dockerfile","expected_codename":"trixie"},
-            {"name":"hugo","tag":"latest","dockerfile":"hugo/latest.Dockerfile","expected_codename":"bookworm"},
-            {"name":"zola","tag":"latest","dockerfile":"zola/latest.Dockerfile","expected_codename":"bookworm"}
+            {"name":"node","tag":"20","dockerfile":"node/20.Dockerfile","expected_id":"debian","expected_codename":"trixie"},
+            {"name":"node","tag":"22","dockerfile":"node/22.Dockerfile","expected_id":"debian","expected_codename":"trixie"},
+            {"name":"bun","tag":"1","dockerfile":"bun/1.Dockerfile","expected_id":"debian","expected_codename":""},
+            {"name":"hugo","tag":"latest","dockerfile":"hugo/latest.Dockerfile","expected_id":"debian","expected_codename":"trixie"},
+            {"name":"zola","tag":"latest","dockerfile":"zola/latest.Dockerfile","expected_id":"debian","expected_codename":"trixie"}
           ]' | tr -d '\n' >> "$GITHUB_OUTPUT"
           echo "" >> "$GITHUB_OUTPUT"
 
@@ -88,6 +88,8 @@ jobs:
           fi
 
           {
+            echo "manifest_version=$VERSION"
+            echo "build_date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
             echo "release_tag=$RELEASE_TAG"
             echo "active_tag=$ACTIVE_TAG"
             echo "rc_tag=$RC_TAG"
@@ -114,6 +116,11 @@ jobs:
           load: true
           push: false
           tags: build-engine-images/${{ matrix.image.name }}:${{ matrix.image.tag }}-ci
+          build-args: |
+            VERSION=${{ steps.tags.outputs.manifest_version }}
+            GIT_REVISION=${{ github.sha }}
+            BUILD_DATE=${{ steps.tags.outputs.build_date }}
+            MANIFEST_VERSION=${{ steps.tags.outputs.manifest_version }}
           cache-from: type=gha,scope=${{ matrix.image.name }}-${{ matrix.image.tag }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}-${{ matrix.image.tag }}
 
@@ -136,9 +143,14 @@ jobs:
           set -euo pipefail
           mkdir -p image-metadata
           tag="build-engine-images/${{ matrix.image.name }}:${{ matrix.image.tag }}-ci"
-          scripts/collect_image_metadata.sh \
-            --image "$tag" \
-            --expected-codename "${{ matrix.image.expected_codename }}" \
+          args=(--image "$tag")
+          if [ -n "${{ matrix.image.expected_id }}" ]; then
+            args+=(--expected-id "${{ matrix.image.expected_id }}")
+          fi
+          if [ -n "${{ matrix.image.expected_codename }}" ]; then
+            args+=(--expected-codename "${{ matrix.image.expected_codename }}")
+          fi
+          scripts/collect_image_metadata.sh "${args[@]}" \
             > "image-metadata/${{ matrix.image.name }}_${{ matrix.image.tag }}.json"
 
       - name: Upload image metadata
@@ -298,6 +310,11 @@ jobs:
           file: ${{ matrix.image.dockerfile }}
           push: true
           tags: ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}:${{ steps.tags.outputs.active_tag }}
+          build-args: |
+            VERSION=${{ steps.tags.outputs.manifest_version }}
+            GIT_REVISION=${{ github.sha }}
+            BUILD_DATE=${{ steps.tags.outputs.build_date }}
+            MANIFEST_VERSION=${{ steps.tags.outputs.manifest_version }}
           cache-from: type=gha,scope=${{ matrix.image.name }}-${{ matrix.image.tag }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image.name }}-${{ matrix.image.tag }}
           provenance: true

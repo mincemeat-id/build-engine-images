@@ -72,8 +72,13 @@ image would become too large.
 
 ## Base Image Policy
 
-- Use Debian/Ubuntu-based official runtime images when possible for glibc and
-  native dependency compatibility.
+- Use Debian Trixie-based official runtime images when possible for glibc and
+  native dependency compatibility. Node, Hugo, and Zola release images are
+  expected to report `ID=debian` and `VERSION_CODENAME=trixie`.
+- Bun uses Oven's generic `oven/bun:1-debian` image because Oven does not
+  publish a codename-specific `1-trixie` or `1-trixie-slim` tag. CI validates
+  that the image is Debian-based without pinning the generic track to a
+  specific codename.
 - Pin base image by digest in Dockerfiles or lock metadata.
 - Install only required build tools:
   - `ca-certificates`

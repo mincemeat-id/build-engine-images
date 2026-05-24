@@ -34,11 +34,16 @@ The table below lists the logical images defined in `manifest.json` for this rel
 
 | Logical Image | Base Image | Pinned Base Digest |
 |---------------|------------|--------------------|
-| `node:20` | `node:20-bookworm-slim` | `<digest>` |
-| `node:22` | `node:22-bookworm-slim` | `<digest>` |
-| `bun:1` | `oven/bun:1-slim` | `<digest>` |
-| `hugo:latest` | `debian:bookworm-slim` | `<digest>` |
-| `zola:latest` | `debian:bookworm-slim` | `<digest>` |
+| `node:20` | `node:20-trixie-slim` | `<digest>` |
+| `node:22` | `node:22-trixie-slim` | `<digest>` |
+| `bun:1` | `oven/bun:1-debian` | `<digest>` |
+| `hugo:latest` builder | `golang:<go-version>-trixie` | `<digest>` |
+| `hugo:latest` final | `debian:trixie-slim` | `<digest>` |
+| `zola:latest` | `debian:trixie-slim` | `<digest>` |
+
+`bun:1` intentionally follows Oven's generic Debian track unless Oven publishes
+a codename-specific Trixie tag before the release. CI validates that it is
+Debian-based; Node, Hugo, and Zola are validated as `VERSION_CODENAME=trixie`.
 
 ## Key Changes in This Release
 

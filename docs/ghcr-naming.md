@@ -50,11 +50,12 @@ Every published image MUST carry the following OCI annotations / labels:
 | `org.opencontainers.image.source`    | `https://github.com/mincemeat-id/build-engine-images`       |
 | `org.opencontainers.image.revision`  | Git SHA of the build.                                       |
 | `org.opencontainers.image.version`   | Manifest version (e.g. `1.0.0`).                            |
+| `org.opencontainers.image.created`   | UTC build timestamp in RFC 3339 format.                     |
 | `org.opencontainers.image.licenses`  | `MIT` (repository SPDX identifier).                         |
 | `org.opencontainers.image.title`     | Logical image id (e.g. `node:22`).                          |
 | `org.opencontainers.image.description`| One-line purpose, see image matrix in `README.md`.         |
 | `id.mincemeat.image.manifest.version`| Manifest semver this image is pinned by.                    |
-| `id.mincemeat.image.runtime.track`   | Runtime track (`20`, `22`, `1`, or `hugo`).                 |
+| `id.mincemeat.image.runtime.track`   | Runtime track (`20`, `22`, `1`, `hugo`, or `zola`).         |
 
 ## Visibility
 

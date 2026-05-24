@@ -99,6 +99,34 @@ DIGEST=$(jq -r '.images["node:22"].digest' manifest.json)
 docker pull "ghcr.io/mincemeat-id/build-engine-images/node@${DIGEST}"
 ```
 
+## Verify a 1.0 release candidate locally
+
+The committed development manifest can intentionally contain placeholder tags.
+Release-readiness checks should be run against a generated candidate manifest
+so the working-tree `manifest.json` remains development-safe until the release
+workflow publishes the signed manifest artifact.
+
+```shell
+python scripts/generate_manifest.py --validate-only
+
+tmp_manifest=$(mktemp)
+python scripts/generate_manifest.py \
+  --output "$tmp_manifest" \
+  --version-semver 1.0.0 \
+  --image-tag node:20=ghcr.io/mincemeat-id/build-engine-images/node:20-1.0.0 \
+  --image-tag node:22=ghcr.io/mincemeat-id/build-engine-images/node:22-1.0.0 \
+  --image-tag bun:1=ghcr.io/mincemeat-id/build-engine-images/bun:1-1.0.0 \
+  --image-tag hugo:latest=ghcr.io/mincemeat-id/build-engine-images/hugo:1.0.0 \
+  --image-tag zola:latest=ghcr.io/mincemeat-id/build-engine-images/zola:1.0.0
+
+python scripts/check_manifest_release.py --manifest "$tmp_manifest"
+rm -f "$tmp_manifest"
+```
+
+During an actual release candidate rehearsal, add the `--image-digest
+<logical>=sha256:<digest>` arguments captured from the candidate build artifacts
+so the manifest check also covers the exact digests that will be promoted.
+
 ## Inspect the SBOM
 
 Every published image carries a CycloneDX SBOM as a CI artifact and, where

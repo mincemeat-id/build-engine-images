@@ -58,13 +58,13 @@ build-engine-images/
 
 ## Image Matrix
 
-| Logical Image | GHCR Tag Pattern                                              | Purpose                                    |
-|---------------|---------------------------------------------------------------|--------------------------------------------|
-| `node:20`     | `ghcr.io/mincemeat-id/build-engine-images/node:20-X.Y.Z`      | Node LTS fallback and Node 20-only projects. |
-| `node:22`     | `ghcr.io/mincemeat-id/build-engine-images/node:22-X.Y.Z`      | Default Node image.                        |
-| `bun:1`       | `ghcr.io/mincemeat-id/build-engine-images/bun:1-X.Y.Z`        | Bun package manager / runtime.             |
-| `hugo:latest` | `ghcr.io/mincemeat-id/build-engine-images/hugo:X.Y.Z`         | Hugo static builds.                        |
-| `zola:latest` | `ghcr.io/mincemeat-id/build-engine-images/zola:X.Y.Z`         | Zola static builds.                        |
+| Logical Image | GHCR Tag Pattern                                              | Base Track | Purpose                                    |
+|---------------|---------------------------------------------------------------|------------|--------------------------------------------|
+| `node:20`     | `ghcr.io/mincemeat-id/build-engine-images/node:20-X.Y.Z`      | Debian Trixie | Node LTS fallback and Node 20-only projects. |
+| `node:22`     | `ghcr.io/mincemeat-id/build-engine-images/node:22-X.Y.Z`      | Debian Trixie | Default Node image.                        |
+| `bun:1`       | `ghcr.io/mincemeat-id/build-engine-images/bun:1-X.Y.Z`        | Oven Debian track | Bun package manager / runtime.             |
+| `hugo:latest` | `ghcr.io/mincemeat-id/build-engine-images/hugo:X.Y.Z`         | Debian Trixie | Hugo static builds.                        |
+| `zola:latest` | `ghcr.io/mincemeat-id/build-engine-images/zola:X.Y.Z`         | Debian Trixie | Zola static builds.                        |
 
 The default is image reuse where practical. Framework-specific images are only
 added when a framework needs extra native dependencies or the generic Node
@@ -72,7 +72,7 @@ image would become too large.
 
 ## Base Image Policy
 
-- Use Debian Trixie-based official runtime images when possible for glibc and
+- Use Debian Trixie-based official runtime images for the 1.0 line when possible for glibc and
   native dependency compatibility. Node, Hugo, and Zola release images are
   expected to report `ID=debian` and `VERSION_CODENAME=trixie`.
 - Bun uses Oven's generic `oven/bun:1-debian` image because Oven does not
@@ -89,6 +89,25 @@ image would become too large.
   - `python3`, `make`, `g++` only where needed for native npm modules
 - Enable Corepack in Node images.
 - Include no secrets, tokens, SSH keys, npmrc credentials, or platform config.
+
+## Size Budget Policy
+
+Image size budgets are committed in [`image-size-budgets.json`](../image-size-budgets.json)
+and enforced in `build-and-publish.yml` for every image build. The initial 1.0
+budgets are deliberately conservative:
+
+| Logical Image | Budget (MiB) |
+|---------------|-------------:|
+| `node:20` | 650 |
+| `node:22` | 650 |
+| `bun:1` | 700 |
+| `hugo:latest` | 275 |
+| `zola:latest` | 250 |
+
+Every build uploads a structured `image-size-<name>-<track>.json` artifact with
+the image name, tag, byte count, MiB value, Dockerfile, git SHA, and manifest
+version. A budget increase must be intentional, reviewed with the size artifact
+that caused it, and committed in the same change that needs the larger image.
 
 ## Entrypoint Contract
 
@@ -165,6 +184,10 @@ Rules:
 - Every image entry must include a digest.
 - Engine pulls by digest when available.
 - Build-engine releases pin an accepted manifest version range.
+- The committed `manifest.json` may remain a development-safe manifest with
+  placeholder release tags until the GitHub Release workflow generates the final
+  signed release manifest artifact. Release-only checks run against generated
+  candidate or release manifests, not the development manifest.
 
 ## Framework Acceptance Matrix
 
@@ -290,3 +313,23 @@ See [rollback.md](./rollback.md) for the detailed rollback procedure.
 - Critical/high vulnerability gate blocks publication as defined.
 - No secrets appear in image layers or repo scan.
 - Build-engine can pull every manifest image by digest.
+
+## 1.0 Acceptance Criteria
+
+- Node, Hugo, and Zola images are Debian Trixie-based and pass OS-codename
+  validation in CI.
+- Bun's generic Oven Debian base decision is documented here and validated as
+  Debian-based in CI.
+- Dockerfile bases are pinned by digest.
+- Every image includes `/build-entrypoint.sh`, runs as non-root, and provides
+  `jq` for the entrypoint.
+- Every image carries the required OCI labels documented in
+  [ghcr-naming.md](./ghcr-naming.md), including build revision, build date,
+  image version, and manifest version.
+- Every image stays within the committed size budget.
+- Cold and warm fixture suites pass for every supported positive and negative
+  fixture.
+- The generated 1.0 manifest has no `0.0.0` placeholder tags and passes
+  release-manifest checks.
+- Published release images, manifest signature, and provenance verify before
+  the manifest is promoted to `build-engine`.

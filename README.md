@@ -8,13 +8,13 @@ versioned [`manifest.json`](./manifest.json) consumed by the build engine.
 
 ## Image Matrix
 
-| Logical Image | GHCR Tag Pattern                                              | Purpose                                    |
-|---------------|---------------------------------------------------------------|--------------------------------------------|
-| `node:20`     | `ghcr.io/mincemeat-id/build-engine-images/node:20-X.Y.Z`      | Node LTS fallback / Node 20-only projects. |
-| `node:22`     | `ghcr.io/mincemeat-id/build-engine-images/node:22-X.Y.Z`      | Default Node image.                        |
-| `bun:1`       | `ghcr.io/mincemeat-id/build-engine-images/bun:1-X.Y.Z`        | Bun package manager / runtime.             |
-| `hugo:latest` | `ghcr.io/mincemeat-id/build-engine-images/hugo:X.Y.Z`         | Hugo static builds.                        |
-| `zola:latest` | `ghcr.io/mincemeat-id/build-engine-images/zola:X.Y.Z`         | Zola static builds.                        |
+| Logical Image | GHCR Tag Pattern                                              | Base Track | Purpose                                    |
+|---------------|---------------------------------------------------------------|------------|--------------------------------------------|
+| `node:20`     | `ghcr.io/mincemeat-id/build-engine-images/node:20-X.Y.Z`      | Debian Trixie | Node LTS fallback / Node 20-only projects. |
+| `node:22`     | `ghcr.io/mincemeat-id/build-engine-images/node:22-X.Y.Z`      | Debian Trixie | Default Node image.                        |
+| `bun:1`       | `ghcr.io/mincemeat-id/build-engine-images/bun:1-X.Y.Z`        | Oven Debian track | Bun package manager / runtime.             |
+| `hugo:latest` | `ghcr.io/mincemeat-id/build-engine-images/hugo:X.Y.Z`         | Debian Trixie | Hugo static builds.                        |
+| `zola:latest` | `ghcr.io/mincemeat-id/build-engine-images/zola:X.Y.Z`         | Debian Trixie | Zola static builds.                        |
 
 Pull by digest from [`manifest.json`](./manifest.json) — never by floating tag.
 

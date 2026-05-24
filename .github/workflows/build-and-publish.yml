@@ -17,6 +17,11 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      rc_version:
+        description: "Manifest version to use for release-candidate tags and candidate manifest."
+        required: true
+        default: "1.0.0"
 
 permissions:
   contents: read
@@ -65,6 +70,15 @@ jobs:
         id: tags
         run: |
           VERSION=$(jq -r '.version' manifest.json)
+          DISPATCH_RC_VERSION="${{ inputs.rc_version || '' }}"
+
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "$DISPATCH_RC_VERSION" ]; then
+            VERSION="$DISPATCH_RC_VERSION"
+          fi
+
           RUN_TRACK="${{ matrix.image.tag }}"
 
           if [ "$RUN_TRACK" = "latest" ]; then
@@ -81,7 +95,7 @@ jobs:
 
           if [ "${{ github.event_name }}" = "release" ]; then
             ACTIVE_TAG="$RELEASE_TAG"
-          elif [ "${{ github.event_name }}" = "push" ]; then
+          elif [ "${{ github.event_name }}" = "push" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             ACTIVE_TAG="$RC_TAG"
           else
             ACTIVE_TAG="$PR_TAG"
@@ -347,6 +361,65 @@ jobs:
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
 
+      - name: Generate cosign-verifiable SLSA provenance attestation
+        if: github.event_name != 'pull_request'
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          set -euo pipefail
+          IMG="ghcr.io/mincemeat-id/build-engine-images/${{ matrix.image.name }}@${{ steps.push.outputs.digest }}"
+          jq -n \
+            --arg ref "${{ github.ref }}" \
+            --arg repo "https://github.com/${{ github.repository }}" \
+            --arg workflow_path ".github/workflows/build-and-publish.yml" \
+            --arg event_name "${{ github.event_name }}" \
+            --arg repository_id "${{ github.repository_id }}" \
+            --arg repository_owner_id "${{ github.repository_owner_id }}" \
+            --arg runner_environment "${{ runner.environment }}" \
+            --arg workflow_ref "${{ github.workflow_ref }}" \
+            --arg sha "${{ github.sha }}" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}" \
+            '{
+              buildDefinition: {
+                buildType: "https://actions.github.io/buildtypes/workflow/v1",
+                externalParameters: {
+                  workflow: {
+                    ref: $ref,
+                    repository: $repo,
+                    path: $workflow_path
+                  }
+                },
+                internalParameters: {
+                  github: {
+                    event_name: $event_name,
+                    repository_id: $repository_id,
+                    repository_owner_id: $repository_owner_id,
+                    runner_environment: $runner_environment
+                  }
+                },
+                resolvedDependencies: [
+                  {
+                    uri: ("git+" + $repo + "@" + $ref),
+                    digest: {
+                      gitCommit: $sha
+                    }
+                  }
+                ]
+              },
+              runDetails: {
+                builder: {
+                  id: ("https://github.com/" + $workflow_ref)
+                },
+                metadata: {
+                  invocationId: $run_url
+                }
+              }
+            }' > slsa-provenance.json
+          cosign attest --yes \
+            --predicate slsa-provenance.json \
+            --type slsaprovenance1 \
+            "$IMG"
+
       - name: Verify cosign signature (post-publish)
         # Stage 1 post-condition: a publish without a verifiable signature
         # is treated as a failed publish. Keeps the trust chain honest.
@@ -406,7 +479,7 @@ jobs:
   manifest-update:
     name: Update, Sign and Publish Manifest
     needs: build
-    if: github.event_name == 'release' || github.event_name == 'push'
+    if: github.event_name == 'release' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -462,6 +535,10 @@ jobs:
             VERSION_VAL="${VERSION_VAL#v}"
             ARGS+=("--version-semver" "$VERSION_VAL")
             echo "release_version=$VERSION_VAL" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION_VAL="${{ inputs.rc_version }}"
+            ARGS+=("--version-semver" "$VERSION_VAL")
+            echo "release_version=$VERSION_VAL" >> "$GITHUB_OUTPUT"
           fi
 
           python scripts/generate_manifest.py "${ARGS[@]}"
@@ -475,7 +552,7 @@ jobs:
           python scripts/check_manifest_release.py --manifest manifest.json
 
       - name: Upload Candidate Manifest
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: candidate-manifest

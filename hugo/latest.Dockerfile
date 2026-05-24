@@ -19,7 +19,6 @@ ENV CGO_ENABLED=1 \
     GOFLAGS="-trimpath -buildvcs=false"
 
 RUN apt-get update \
-    && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
         g++ \
         git \
@@ -52,7 +51,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 # curl, git, jq (for entrypoint), tar, xz-utils, plus libc6 already in base.
 # hadolint ignore=DL3008
 RUN apt-get update \
-    && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \

@@ -26,10 +26,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Minimal toolchain. python3/make/g++ are kept for the small subset of Bun
 # projects that still resolve native node-gyp dependencies. jq is required by
-# /build-entrypoint.sh.
+# /build-entrypoint.sh. The explicit inherited base packages below keep known
+# fixable Debian CVEs patched without restoring broad package upgrades.
 # hadolint ignore=DL3008
 RUN apt-get update \
-    && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
@@ -40,6 +40,10 @@ RUN apt-get update \
         python3 \
         make \
         g++ \
+        libcap2 \
+        libsystemd0 \
+        libudev1 \
+        sed \
     && rm -rf /var/lib/apt/lists/*
 
 COPY entrypoint/build-entrypoint.sh /build-entrypoint.sh

@@ -31,10 +31,11 @@ ARG NPM_VERSION=11.14.1
 ARG BRACE_EXPANSION_VERSION=5.0.6
 
 # Minimal toolchain. python3/make/g++ are required by many native npm modules
-# (sharp, sqlite3, node-gyp). jq is required by /build-entrypoint.sh.
+# (sharp, sqlite3, node-gyp). jq is required by /build-entrypoint.sh. The
+# explicit inherited base packages below keep known fixable Debian CVEs patched
+# without restoring broad package upgrades.
 # hadolint ignore=DL3008
 RUN apt-get update \
-    && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
@@ -45,6 +46,10 @@ RUN apt-get update \
         python3 \
         make \
         g++ \
+        libcap2 \
+        libsystemd0 \
+        libudev1 \
+        sed \
     && rm -rf /var/lib/apt/lists/*
 
 RUN npm install -g "npm@${NPM_VERSION}" \

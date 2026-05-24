@@ -28,7 +28,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Zola ships as a self-contained binary. jq is required by /build-entrypoint.sh.
 # hadolint ignore=DL3008
 RUN apt-get update \
-    && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \

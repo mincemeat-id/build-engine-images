@@ -34,7 +34,6 @@ ARG BRACE_EXPANSION_VERSION=5.0.6
 # (sharp, sqlite3, node-gyp). jq is required by /build-entrypoint.sh.
 # hadolint ignore=DL3008
 RUN apt-get update \
-    && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \

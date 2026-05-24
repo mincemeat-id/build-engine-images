@@ -12,6 +12,69 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 repo_root="$(cd "$here/../.." && pwd)"
 cache_dir="$here/cache"
+timing_output="${SMOKE_TIMING_OUTPUT:-}"
+
+usage() {
+    cat <<'EOF'
+Usage: tests/smoke/run-warm.sh [--timing-output PATH]
+
+Run warm-cache build smoke tests and optionally write machine-readable timing JSON.
+EOF
+}
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --timing-output)
+            timing_output="${2:-}"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown argument: $1" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+write_timing_json() {
+    local mode="$1" output="$2" failed_count="$3"
+    local generated_at total_count fixtures_json
+    generated_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+    total_count="${#results[@]}"
+    fixtures_json="$(
+        printf '%s\n' "${results[@]}" \
+            | jq -R -s '
+                split("\n")
+                | map(select(length > 0))
+                | map(split("|") | {
+                    fixture: .[0],
+                    status: .[1],
+                    duration_seconds: (.[2] | tonumber)
+                })
+            '
+    )"
+
+    mkdir -p "$(dirname "$output")"
+    jq -n \
+        --arg mode "$mode" \
+        --arg generated_at "$generated_at" \
+        --argjson total "$total_count" \
+        --argjson failed "$failed_count" \
+        --argjson fixtures "$fixtures_json" \
+        '{
+            mode: $mode,
+            generated_at: $generated_at,
+            total: $total,
+            passed: ($total - $failed),
+            failed: $failed,
+            duration_seconds: (($fixtures | map(.duration_seconds) | add) // 0),
+            fixtures: $fixtures
+        }' > "$output"
+}
 
 if [ ! -d "$cache_dir" ]; then
     echo "Warning: Cache directory $cache_dir not found. Warm cache test will start cold."
@@ -167,6 +230,11 @@ for res in "${results[@]}"; do
     fi
 done
 echo "=================================================="
+
+if [ -n "$timing_output" ]; then
+    write_timing_json "warm" "$timing_output" "$failed"
+    echo "Wrote timing JSON to $timing_output"
+fi
 
 if [ "$failed" -gt 0 ]; then
     echo "$failed smoke test(s) failed." >&2

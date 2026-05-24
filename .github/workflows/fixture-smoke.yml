@@ -45,7 +45,20 @@ jobs:
           docker version
           docker buildx version
           docker buildx inspect --bootstrap
+      - name: Install jq
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y jq
+          fi
       - name: Run cold build smoke tests
-        run: bash tests/smoke/run-cold.sh
+        run: bash tests/smoke/run-cold.sh --timing-output smoke-timing/cold.json
       - name: Run warm-cache build smoke tests
-        run: bash tests/smoke/run-warm.sh
+        run: bash tests/smoke/run-warm.sh --timing-output smoke-timing/warm.json
+      - name: Upload smoke timing records
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: smoke-timing
+          path: smoke-timing/*.json
+          if-no-files-found: error
+          retention-days: 7

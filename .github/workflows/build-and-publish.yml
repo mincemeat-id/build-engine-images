@@ -40,7 +40,7 @@ jobs:
     outputs:
       images: ${{ steps.set.outputs.images }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - id: set
         # Stage 2/7: hard-coded matrix of v1 GA and promoted candidate images. A later stage may add
         # changed-path detection; for now we build all supported images on every run so
@@ -64,7 +64,7 @@ jobs:
       matrix:
         image: ${{ fromJson(needs.matrix.outputs.images) }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Calculate Image Tags
         id: tags
@@ -485,7 +485,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # Stage 1: read-only checkout. The previous flow committed the
           # regenerated manifest back to master from inside this job, which
